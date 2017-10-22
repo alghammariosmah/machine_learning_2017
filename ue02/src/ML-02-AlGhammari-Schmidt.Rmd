@@ -65,7 +65,7 @@ cars <- upSample(x = mtcars[,-2], y = factor(mtcars[,2]), list = F)
 table(cars$Class)
 ```
 
-This upsampling will duplicate vaggest available.
+This upsampling will duplicate values to increase the number of entries to the biggest available.
 
 ## Train a KNN
 Now a KNN can be trained, but without partitioning.
