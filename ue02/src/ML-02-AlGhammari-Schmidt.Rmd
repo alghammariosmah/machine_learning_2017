@@ -34,10 +34,10 @@ Also, there are many features in comparison to the amount of samples.
 
 ```{r 2_analysis}
 featurePlot(mtcars, factor(mtcars[,2]) , upper.panel=NULL, plot = 'density', plot.points=T, scales='free', auto.key=T)
-pairs(mtcars[1:10], upper.panel=NULL, col=mtcars[,2])
+pairs(mtcars[1:11], upper.panel=NULL, col=mtcars[,2])
 ```
 
-It is visible that some features are not useable to distinguish the cylinder vlaues. Those are *vs*, *am* and *gear*.
+It is visible that some features are not useable to distinguish the cylinder vlaues. Those are *vs*, *am*, *gear* and *carb*.
 Taking the other values in consideration, the combination of those values can be used to distinguish the values.
 
 ## Feature Analysis *hp* and *drat*
@@ -45,11 +45,11 @@ Taking the other values in consideration, the combination of those values can be
 For analysis the features *hp* and *drat* were used. In the following figure the relation between those features can be seen.
 
 ```{r}
-pairs(mtcars[,3:4], upper.panel=NULL, col=mtcars[,2])
+pairs(mtcars[,4:5], upper.panel=NULL, col=mtcars[,2]) # adjusted to 4:5 instead of 3:4
 ```
 
 It is visible, that the values for *cyl* form groups along a linear axis.
-Therefor the solution will probably take three sections in which the values will belong to one of the groups for *cyl*.
+Therefor, the solution will probably take three sections in which the values will belong to one of the groups for *cyl*.
 
 Analysing the available samples in consideration of the *cyl* feature.
 
