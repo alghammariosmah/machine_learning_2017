@@ -65,7 +65,7 @@ cars <- upSample(x = mtcars[,-2], y = factor(mtcars[,2]), list = F)
 table(cars$Class)
 ```
 
-This upsampling will duplicate values to increase the number of entries to the biggest available.
+This upsampling will duplicate vaggest available.
 
 ## Train a KNN
 Now a KNN can be trained, but without partitioning.
@@ -209,5 +209,99 @@ It can be seen, that the values does not change over the used methods.
 Most likely is that the values, the model was checked with, were no suitable values for a check as well as the model has been trained with very few samples.
 
 # Part 3
+Use the diamonds dataset delivered with the ggplot2 library:
+```{r}
+library(ggplot2)
+data(diamonds)
+```
+Goal is to predict the diamond price from features carat, depth, table, and x:
+What are your expectations from graphical data analysis?
+It is a key using most of Machine Learning as it enables us to Understand the data where we will apply Machine Learning to. 
+
+Are there features that might be useful?
+Yes, features y and z could also be useful in prediction. 
+```{r}
+temp <- tail(diamonds[, c('price','carat','depth','table','x')],50) # taking the last 50 values for a faster plot
+featurePlot(temp[,2:5], temp$price , col= 2:5, scales= list(relatio='free'), plot = 'pairs')
+```
+
+Use a KNN regression model and try different k, and a linear model (lm) or generalized linear model (glm), again with
+using trainControl(method="none", ...):
+* Use root mean squared error RMSE as performance metric.
+* Hint: ensure a numeric target variable is handled to train.
+```{r}
+
+temp$price <- as.numeric(temp$price)
+temp <- as.data.frame(unclass(temp)) # For some reason I had an error of "wrong model type for classification", so running this data frame helps  
+
+modelLm <- train(x = temp[,2:5], 
+                 y = temp[,1], # ensure this is numeric for regression and a factor for classification
+                 method = 'lm', 
+                 metric = 'RMSE', 
+                 maximize = F, # minimize error measures, but maximize Accuracy, Kappa, ROC, etc
+                 trControl = trainControl(method = 'none', allowParallel = T))
+
+modelLm
+```
+
+Predict outcomes for your data and compute the RMSE and mean absolute error (MAE):
+
+```{r}
+predicted <- predict(modelLm, temp[,2:5])
+
+# RMSE value on training data
+sqrt(mean((predicted - temp[,1])**2)) 
+
+# MAE value on training data
+mean(abs(predicted - temp[,1]**2))
+```
+
+What is the error for these models? To give meaning to this error, state how big the error is compared to the
+mean/median and standard deviation/mad of the diamond price. What are your thoughts about these results ("best"
+model)?
+
+The error is big as there is no stright line. So the prediction is not perfect. The mean and the median are the same for both predicted and real values. However, there are huge difference between the real and predicted values in both the standard deviation and MAD values.
+```{r}
+plot(predicted, temp[,1]) # plot predicted vs real values -- scatter represents error, straight line would mean perfect prediction
+
+# The mean for real values:
+mean(temp$price)
+# The mean for predicted values:
+mean(predicted)
+
+# The Median for real values:
+median(temp$price)
+# The median for predicted values:
+median(predicted)
+
+# Standard Deviation for real values:
+sqrt(var(temp$price))
+# Standard Deviation for predicted values:
+sqrt(var(predicted))
+
+# MAD for real values:
+mad(temp$price)
+# MAD for real values:
+mad(predicted)
+```
+ 
 
 # Part 4
+
+Think about what the problem is with using the same data to train and evaluate a model. KNN with k=1 is an extreme
+examples for this.
+
+Explain the problem in your own words.
+The problem with using the same data for training and evaluating the model is that the model can report the correct results every time it predicts the same data. It is like asking the model to predict the data that it has already seen before, or to predict the data that was used to create the model. 
+
+
+What ways can you think of to prevent this problem?
+For that problem, it is better to train in one set and evaluate on another set for better prediction. 
+Regarding When K is small in knn, we are restraining the region of a given prediction and forcing our classifier to be “more blind” to the overall distribution. A small value for K provides the most flexible fit, which will have low bias but high variance. 
+
+
+
+
+
+
+
