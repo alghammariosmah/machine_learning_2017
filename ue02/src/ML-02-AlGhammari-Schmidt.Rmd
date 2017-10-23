@@ -214,6 +214,8 @@ Use the diamonds dataset delivered with the ggplot2 library:
 library(ggplot2)
 data(diamonds)
 ```
+
+## Expectations from graphical data anlysis
 Goal is to predict the diamond price from features carat, depth, table, and x:
 What are your expectations from graphical data analysis?
 It is a key using most of Machine Learning as it enables us to Understand the data where we will apply Machine Learning to. 
@@ -223,19 +225,21 @@ Yes, features y and z could also be useful in prediction.
 ```{r}
 temp <- tail(diamonds[, c('price','carat','depth','table','x')],50) # taking the last 50 values for a faster plot
 featurePlot(temp[,2:5], temp$price , col= 2:5, scales= list(relatio='free'), plot = 'pairs')
+pairs(temp, col=1:5) #TODO: maybe just use the pairs function? What is the meaning of the colors?
 ```
+
+## KNN regression model
 
 Use a KNN regression model and try different k, and a linear model (lm) or generalized linear model (glm), again with
 using trainControl(method="none", ...):
 * Use root mean squared error RMSE as performance metric.
 * Hint: ensure a numeric target variable is handled to train.
 ```{r}
-
-temp$price <- as.numeric(temp$price)
+price <- as.numeric(temp$price)
 temp <- as.data.frame(unclass(temp)) # For some reason I had an error of "wrong model type for classification", so running this data frame helps  
 
 modelLm <- train(x = temp[,2:5], 
-                 y = temp[,1], # ensure this is numeric for regression and a factor for classification
+                 y = price, # ensure this is numeric for regression and a factor for classification
                  method = 'lm', 
                  metric = 'RMSE', 
                  maximize = F, # minimize error measures, but maximize Accuracy, Kappa, ROC, etc
@@ -244,6 +248,7 @@ modelLm <- train(x = temp[,2:5],
 modelLm
 ```
 
+## Outcome prediction
 Predict outcomes for your data and compute the RMSE and mean absolute error (MAE):
 
 ```{r}
@@ -253,8 +258,10 @@ predicted <- predict(modelLm, temp[,2:5])
 sqrt(mean((predicted - temp[,1])**2)) 
 
 # MAE value on training data
-mean(abs(predicted - temp[,1]**2))
+mean(abs(predicted - temp[,1]))
 ```
+
+## Model error
 
 What is the error for these models? To give meaning to this error, state how big the error is compared to the
 mean/median and standard deviation/mad of the diamond price. What are your thoughts about these results ("best"
@@ -281,7 +288,7 @@ sqrt(var(predicted))
 
 # MAD for real values:
 mad(temp$price)
-# MAD for real values:
+# MAD for predicted values:
 mad(predicted)
 ```
  
