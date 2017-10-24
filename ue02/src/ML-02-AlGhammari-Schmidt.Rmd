@@ -224,7 +224,7 @@ Are there features that might be useful?
 Yes, features y and z could also be useful in prediction. 
 ```{r}
 temp <- tail(diamonds[, c('price','carat','depth','table','x')],50) # taking the last 50 values for a faster plot
-featurePlot(temp[,2:5], temp$price , col= 2:5, scales= list(relatio='free'), plot = 'pairs')
+# featurePlot(temp[,2:5], temp$price , col= 2:5, scales= list(relatio='free'), plot = 'pairs')
 pairs(temp, col=1:5) #TODO: maybe just use the pairs function? What is the meaning of the colors?
 ```
 
