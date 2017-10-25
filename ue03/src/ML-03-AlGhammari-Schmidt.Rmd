@@ -1,0 +1,111 @@
+---
+title: "ML-02-AlGhammari-Schmidt"
+author: "Bernd Schmidt , Osamah Al-Ghammari"
+date: "October 17, 2017"
+output: pdf_document
+---
+
+```{r setup, message=FALSE, results='hide'}
+#TODO: update required packages
+require(plyr)
+require(lattice)
+require(ggplot2)
+require(kernlab)
+require(caret)
+require(doMC)
+library(pROC)
+registerDoMC(3) 
+```
+
+# Part 1
+
+## Graphical analysis
+
+Analysing the dateset *mtcars*.
+```{r 1_analyse}
+data(mtcars)
+# showing the correlation of the values for distinguishing the number of cylinders
+plot(mtcars$drat, mtcars$wt, col=mtcars$cyl)
+# showing the densitiy of the cylinder values for each feature
+featurePlot(mtcars[,5:6], factor(mtcars$cyl), upper.panel = NULL, plot = "density", plot.points = T, scales = 'free', auto.key = T)
+```
+
+Both plots show, that there is no clear seperation of the number of cylinders in the comined values from *wt* and *drat*.
+Also the density shows, that the number of cylinders has no impact on the distribution of the features. On *drat* more than on *wt*.
+
+But it is visible that the possibility to determine the cylinder value for 8 cylinders will be very high, because there are very less overlaps in the data.
+
+```{r 2_no_parameter_svm}
+mtcars_factor = factor(paste0('c', mtcars$cyl))
+svm <- train( x = mtcars[,5:6],
+              y = mtcars_factor,
+              preProcess = NULL,
+              method = "svmRadial",
+              tuneGrid = expand.grid(sigma=30, C=10), # use DIFFERENT parameter ranges for your problems, e.g. try 3**(-10:10)
+              metric = "Kappa",
+              maximize = T,
+              trControl = trainControl(
+                method = 'none'
+              )
+            )
+svm
+
+predicted <- predict(svm, newdata = mtcars[,5:6])
+confMatrix <- confusionMatrix(data = predicted, reference = mtcars_factor)
+confMatrix
+levelplot(sweep(x = confMatrix$table, STATS = colSums(confMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+```
+
+As previousely stated, the cylinder value for 8 cylinders was predicted 100% correct.
+the other values were not predicted that good.
+The problem, when using the same data for training and testing is that, the model already knew those values and therefore can predict them very well.
+There are also just 32 samples in the dataset. Therefore the possibility of detecting this result on some real data is very low because there are millions of different cars in the world.
+
+## Parameter Grid Search
+
+```{r 2_parameter_svm}
+tuneGrid <- expand.grid(C=3**(-5:5), sigma=3**(-3:3))
+trControl <- trainControl(method = 'LOOCV', 
+                          number = 10, 
+                          returnData = F, 
+                          classProbs = T, 
+                          returnResamp = 'final', 
+                          allowParallel = T)
+mtcars_factor = factor(paste0('c', mtcars$cyl))
+svm <- train( x = mtcars[,5:6],
+              y = mtcars_factor,
+              preProcess = NULL,
+              method = "svmRadial",
+              tuneGrid = tuneGrid,
+              metric = "Kappa",
+              maximize = T,
+              trControl = trControl
+            )
+svm
+
+plot(svm, scales=list(log=3))
+# fitness landscape
+levelplot(data = svm$results, x = Kappa ~ C * sigma, col.regions = gray(100:0/100), scales=list(log=3))
+# final model parameters
+svm$finalModel
+# prediction
+predicted <- predict(svm$finalModel, newdata = mtcars[,5:6])
+confMatrix <- confusionMatrix(data = predicted, reference = mtcars_factor)
+confMatrix
+levelplot(sweep(x = confMatrix$table, STATS = colSums(confMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+```
+
+The **TPR** and **TNR** are both **1**, which means **all** values were predicted correct.
+But in comparision to the model, the colleague/friend/classmate told us, the values for the SVM where very different.
+$sigma=1$ and $C=243$.
+
+This is caused to the automatic detection of parameters.
+We don't test the model on different data. Therefore we cannot detect a overfitting in the model. In reference to the values from our final model, an overfitting is very likely.
+
+# Part 2
+
+# Part 3
+
+# Part 4
+
+# Part 5
