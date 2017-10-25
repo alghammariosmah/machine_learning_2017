@@ -1,1 +1,4 @@
 .Rproj.user
+
+# generated pdf documents
+**/src/*.pdf
