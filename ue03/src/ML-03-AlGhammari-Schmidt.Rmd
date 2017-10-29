@@ -102,8 +102,8 @@ $sigma=1$ and $C=243$.
 This is caused to the automatic detection of parameters.
 We don't test the model on different data. Therefore we cannot detect a overfitting in the model. In reference to the values from our final model, an overfitting is very likely.
 
-## Part 2
-Your task is to use the ggplot2 diamonds dataset predict price from x only. Your are limited to using a regular linear model.
+# Part 2
+##Your task is to use the ggplot2 diamonds dataset predict price from x only. Your are limited to using a regular linear model.
 
 ```{r}
 library(ggplot2)
@@ -118,7 +118,7 @@ savedData <- as.data.frame(diamonds[, c('price','x')])
 ```
 
 
-# What you you conclude from graphical data analysis?
+## What you you conclude from graphical data analysis?
 It is noticeable that the price increases when the length of the diamond increases. 
 
 ```{r }
@@ -128,7 +128,7 @@ plot(diamonds$x, col=diamonds$price, pch = 19)
 
 ```
 
-# Train a generalized linear model glm using 10CV with 20 repeats. For this part of the assigment, not having an additional held-back test set and performing CV on all data is OK. When handing data to the x variable of caret::train, ensure that you hand it as a data frame (subsetting a data frame to a single variable can lead to it becoming a vector instead of a data frame, which will trigger errors in caret. You can e.g. use x=data.frame(YOUR_X), ... to obtain a data frame with 1 column from you vector)
+## Train a generalized linear model glm using 10CV with 20 repeats. For this part of the assigment, not having an additional held-back test set and performing CV on all data is OK. When handing data to the x variable of caret::train, ensure that you hand it as a data frame (subsetting a data frame to a single variable can lead to it becoming a vector instead of a data frame, which will trigger errors in caret. You can e.g. use x=data.frame(YOUR_X), ... to obtain a data frame with 1 column from you vector)
 
 ```{r}
 # train
@@ -148,7 +148,7 @@ model$results
 
 ```
 
-# Use the model to predict the target variable for all samples.
+## Use the model to predict the target variable for all samples.
 
 ```{r }
 
@@ -158,26 +158,26 @@ trainPredicted <- predict(model, data.frame(savedData[,2]))
 ```
 
 
-# State the distribution of the absolute error (e.g. summary(abs(predicted-observed))).
+## State the distribution of the absolute error (e.g. summary(abs(predicted-observed))).
 ```{r }
 summary(abs(trainPredicted-savedData[,1])**2)
 
 ```
 
 
-# Visualize the predicted value over observed value in a scatterplot and add the ideal fit as diagonal line for reference.
+## Visualize the predicted value over observed value in a scatterplot and add the ideal fit as diagonal line for reference.
 ```{r }
 plot(trainPredicted, savedData[,1]) 
 abline(0,1, col=2) 
 
 ```
 
-# What do you see/derive from this plot?
+## What do you see/derive from this plot?
 The plot the predicted and the real values when using the general linear model. The scatter represents error, straight line would mean the ideal fit for the trained values with an error free model near 0. So, all predictions would be on this line
 
 
 
-# Now train another linear model, but use a "trick" before training/evaluating the model: apply a logarithm to the target variable before.
+## Now train another linear model, but use a "trick" before training/evaluating the model: apply a logarithm to the target variable before.
 ```{r}
 ##################################################################
 # data partitioning
@@ -196,7 +196,7 @@ testing <- savedData[indexes_test,]
 
 ```
 
-# Do graphical feature analysis before creating the model: what is different?
+## Do graphical feature analysis before creating the model: what is different?
 The price increases linearily with inceasing the length x. 
 
 ```{r}
@@ -207,7 +207,7 @@ featurePlot(training[,2], training$price)
 
 
 
-# Again use 10CV with 20 repeats, then use the model to predict the target variable for all samples.
+## Again use 10CV with 20 repeats, then use the model to predict the target variable for all samples.
 ```{r}
 model2 <- train(x = data.frame(training[,2]), 
                y = training[,1], 
@@ -229,7 +229,7 @@ summary(abs(trainPredicted2-training[,1])**2)
 
 ```
 
-# Visualize the predicted values over observed values and add the ideal fit as line for reference to the plots: what is different to the situation before?
+## Visualize the predicted values over observed values and add the ideal fit as line for reference to the plots: what is different to the situation before?
 
 It is almost the same...
 ```{r}
