@@ -223,7 +223,7 @@ It is a key using most of Machine Learning as it enables us to Understand the da
 Are there features that might be useful?
 Yes, features y and z could also be useful in prediction. 
 ```{r}
-temp <- tail(diamonds[, c('price','carat','depth','table','x')],50) # taking the last 50 values for a faster plot
+temp <- diamonds[, c('price','carat','depth','table','x')] 
 # featurePlot(temp[,2:5], temp$price , col= 2:5, scales= list(relatio='free'), plot = 'pairs')
 pairs(temp, col=1:5) #TODO: maybe just use the pairs function? What is the meaning of the colors?
 ```
@@ -240,7 +240,7 @@ temp <- as.data.frame(unclass(temp)) # For some reason I had an error of "wrong 
 
 modelLm <- train(x = temp[,2:5], 
                  y = price, # ensure this is numeric for regression and a factor for classification
-                 method = 'lm', 
+                 method = 'knn', 
                  metric = 'RMSE', 
                  maximize = F, # minimize error measures, but maximize Accuracy, Kappa, ROC, etc
                  trControl = trainControl(method = 'none', allowParallel = T))
