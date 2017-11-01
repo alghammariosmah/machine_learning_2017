@@ -241,6 +241,92 @@ abline(0,1, col=2)
 
 # Part 3
 
+Task is to predict the Class from these features. Split data into a 2% training and 98% test partition with set.seed(123456).
+Use the training partition with 10CV with 20 repeats to train an LDA (lda) model (takes a while to compute). Compute the confusion matrix and Kappa for both the train and test partition. How do train and test errors differ? Keep the model object and training/test error/performance values for later comparison.
+
+The best performance is reaching between 88% to 94% training set. 
+
+##You might encounter warnings like Warning: In lda.default(x, grouping, ...) : variables are collinear or warning: prediction from a rank-deficient fit may be misleading when training the model. You can ignore these warnings for now. 
+##Repeat the above for increased partition sizes (always using the same seed for partitioning!). Double the size of the training partition (4%, 8%, ...) until the gap between training and test error closes. Which train/test partition size do you need to close this gap? Keep all created models and metric values for later comparison.
+
+```{r}
+library(caret)
+data(segmentationData)
+str(segmentationData)
+library(doMC) 
+registerDoMC(8)
+
+
+nums <- sapply(segmentationData, is.numeric) # Filtering only numeric values
+numericData <- segmentationData[ , nums]
+
+numericData$Class <- segmentationData$Class
+col_idx <- grep("Class", names(numericData))
+numericData <- numericData[, c(col_idx, (1:ncol(numericData))[-col_idx])] # moving Class to the first column
+
+segmentationData <- numericData
+
+
+set.seed(123456)
+indexes_train <- createDataPartition(segmentationData$Class, p = 0.88, list = F) # indexes of training samples according to segmentationData[,1]
+indexes_test <- (1:nrow(segmentationData))[-indexes_train] # use all samples not in train as test samples
+
+training <- segmentationData[indexes_train,]
+testing <- segmentationData[indexes_test,]
+
+names(getModelInfo('lda')) # linear discriminant analysis 
+getModelInfo('lda')[[1]]$parameters # ...with hyperparameters
+modellda <- train(x = training[,2:60], 
+                  y = training[,1], # ensure this is a numeric for regression and a factor for classification
+                  preProcess = NULL, # center, scale, boxcox, pca, ...
+                  method = 'lda', 
+                  tuneGrid = NULL, 
+                  metric = 'Kappa', 
+                  maximize = T, 
+                  trControl = trainControl(method = 'repeatedcv', 
+                                           number = 10, # nr of CV partitions
+                                           repeats = 20, 
+                                           returnData = F, 
+                                           classProbs = T,  
+                                           returnResamp = 'final', 
+                                           allowParallel = T))
+
+modellda
+modellda$results
+
+
+# Confusion matrixse
+# Training confusion Matrix
+trainPredicted <- predict(modellda, newdata = training[,2:60])
+trainConfMatrix <- confusionMatrix(data = trainPredicted, reference = training[,1]) 
+trainConfMatrix
+levelplot(sweep(x = trainConfMatrix$table, STATS = colSums(trainConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+
+# Test confusion matrix
+testPredicted <- predict(modellda, newdata = testing[,2:60])
+testConfMatrix <- confusionMatrix(data = testPredicted, reference = testing[,1])
+testConfMatrix
+levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+
+
+```
+## Visualize the training and test performance for all created models in one plot (using the stored train and test set performance). A trend should be clearly visible in this plot
+
+
+
+
+## Visualize the CV performance over all models in a second plot (e.g. boxplot). Again, a trend should be clearly visible here
+
+
+## Given those models, which training and test partition size would you chose for your application scenario, and why? For the chosen model report a) the confusion matrix, TPR, TNR, FPR, and FNR, and b) visualize the ROC curve and state the AUC.
+
+70% training set and 30% testing set could fit in such scenarios if I have multiple samples. With several samples the model will be able to predict better. 
+
+## Think about what it means if your test data set becomes very small: what could be resulting implications?
+
+Test data size is not as important as training set. Test set assess the performance of a fully-trained model.
+
+
 # Part 4
 
 # Part 5
