@@ -6,7 +6,6 @@ output: pdf_document
 ---
 
 ```{r setup, message=FALSE, results='hide'}
-#TODO: update required packages
 require(plyr)
 require(lattice)
 require(ggplot2)
@@ -103,7 +102,8 @@ This is caused to the automatic detection of parameters.
 We don't test the model on different data. Therefore we cannot detect a overfitting in the model. In reference to the values from our final model, an overfitting is very likely.
 
 # Part 2
-##Your task is to use the ggplot2 diamonds dataset predict price from x only. Your are limited to using a regular linear model.
+
+## Your task is to use the ggplot2 diamonds dataset predict price from x only. Your are limited to using a regular linear model.
 
 ```{r}
 library(ggplot2)
@@ -244,3 +244,27 @@ abline(0,1, col=2)
 # Part 4
 
 # Part 5
+
+## Guidelines
+
+1. **Fundamental tenets of biometrics**
+To make a clear statement about the accuracy of a biometric tenet, it must be evaluated in a large scale.
+1. **Application domain**
+An application must be kept in mind while doing research because otherwise the results can not be used in this application.
+1. **Choice of biometric trait**
+When performing research for new traits, all properties for the use in the target application must should be evaluated.
+1. **Comparing biometric systems**
+An increase only in accuracy can not be taken as a significant achievment.
+1. **Comparing biometric systems**
+When comparing algorithms, the statistical significance of this performance difference must be reported.
+1. **Baseline**
+Comparision of an algorithm against a known baseline is imperative.
+1. **Evaluating biometric system components**
+
+1. **Choice of accuracy metric**
+1. **Choice of datasets**
+1. **Generalization across datasets**
+1. **Training, validation, and test sets**
+1. **Establishing the ground truth**
+1. **Biometric fusion**
+1. **Vulnerabilities of a biometric system**
