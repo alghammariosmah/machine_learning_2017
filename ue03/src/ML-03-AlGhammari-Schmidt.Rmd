@@ -346,11 +346,20 @@ When comparing algorithms, the statistical significance of this performance diff
 1. **Baseline**
 Comparision of an algorithm against a known baseline is imperative.
 1. **Evaluating biometric system components**
-
+When developing new components, the components should be compared with identical input from a proper baseline and the same scoring function applied to the outputs.
 1. **Choice of accuracy metric**
+ROC and CMC curves should be reported together. Only if the target application operates ina closed-set environment, the CMC curve can be reported without the ROC curve. For open-set, FPIR and FNIR must be reported against each other in a plot.
 1. **Choice of datasets**
+A large and challenging dataset should be used, because in a large real world application, the chance of similar faces for example will increase with the number of enrolled users.
 1. **Generalization across datasets**
+The data should represent the target population and environment. Also the data should be captured in multiple sessions spanning over a period of time to increase the intra-clas variability.
 1. **Training, validation, and test sets**
+Those test sets should b non-overlapping to avoid positive bias in the results. This is because the target population is typically unknown, the databases are dynamic and lack a ground truth.
+1. **Experimental protocol**
+When publishing results, details about the experimental protocol and the characteristics of the dataset must be included. This is to make it possible to reproduce the results.
 1. **Establishing the ground truth**
+Ground truth must be reviewed for their correctness, because if there are some errors, the final correctness of the algorithm can not be lower than this error.
 1. **Biometric fusion**
+To increase the systems accuracy, multiple traits can be fused. But it must be weighed against the associated overhead. Therefore fusing traits like iris and face are prefereable.
 1. **Vulnerabilities of a biometric system**
+Vulnerabilities like presenting a spoof or altering the bimetric sample at the senor as well as tampering with the templates stored in the database must be detected or deflected. Also these countermeasures must assure that there is no significant loss in recognition accuracy.
