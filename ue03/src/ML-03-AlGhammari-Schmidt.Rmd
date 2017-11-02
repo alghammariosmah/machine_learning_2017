@@ -432,9 +432,9 @@ bwplot(results)
 test Confusion matrix for LDA model:
 ```{r}
 # test data model lda performance
-testPredictedlda <- predict(models$modellda, testing[,2:60] , type = 'prob')
+testPredictedlda <- predict(models$modellda, testing[,2:60] )
 testConfMatrix <- confusionMatrix(data = testPredictedlda, reference = testing[,1])
-testConfMatrix
+#testConfMatrix
 levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
 
 
@@ -444,33 +444,41 @@ test confusion matrix for KNN model:
 ```{r}
 
 # test data model knn performance 
-testPredictedknn <- predict(models$modelKnn, testing[,2:60]  , type = 'prob')
+testPredictedknn <- predict(models$modelKnn, testing[,2:60]  )
 testConfMatrix <- confusionMatrix(data = testPredictedknn, reference = testing[,1])
-testConfMatrix
+#testConfMatrix
 levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+
 
 ```
 
 test confusion matrix for Linear SVM
 ```{r}
 # test data model Linear SVM performance 
-testPredictedLinearSVM <- predict(models$modelsvmLinear, testing[,2:60]  , type = 'prob')
+testPredictedLinearSVM <- predict(models$modelsvmLinear, testing[,2:60]  )
 testConfMatrix <- confusionMatrix(data = testPredictedLinearSVM, reference = testing[,1])
-testConfMatrix
+#testConfMatrix
 levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+
+
 ```
 
 test confusion matrix for GLM model
 ```{r}
 # test data model GLM performance 
-testPredictedglm <- predict(models$modelglm, testing[,2:60]  , type = 'prob')
+testPredictedglm <- predict(models$modelglm, testing[,2:60])
 testConfMatrix <- confusionMatrix(data = testPredictedglm, reference = testing[,1])
-testConfMatrix
+#testConfMatrix
 levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
 ```
 
 ROC for all models:
 ```{r}
+
+testPredictedlda <- predict(models$modellda, testing[,2:60] , type = 'prob')
+testPredictedknn <- predict(models$modelKnn, testing[,2:60]  , type = 'prob')
+testPredictedLinearSVM <- predict(models$modelsvmLinear, testing[,2:60]  , type = 'prob')
+testPredictedglm <- predict(models$modelglm, testing[,2:60]  , type = 'prob')
 
 plot(roc(response = testing[,1],     predictor = testPredictedlda[,1]),     col = 1) 
 plot(roc(response = testing[,1],   predictor = testPredictedknn[,1]), col = 2, add = T) 
