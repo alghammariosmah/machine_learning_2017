@@ -328,7 +328,9 @@ Test data size is not as important as training set. Test set assess the performa
 
 
 # Part 4
+##This is where we combine all previous techniques: data partitioning, parameter grid search, model training+evaluation and model selection in one classification task. Goal is to obtain the best suited model for a classification task.
 
+##The task is to predict the Class from these features. Perform a 80/20 randomized train/test split, then use 10CV with 5 repeats (20 would be better, but for the sake of runtime, 5 is OK) to train different models (use the AUC ROC as metric to be optimized). For models using hyperparameters do an appropriate parameter grid search and visualize their performance over parameter values. You are free to try and experiment with any type of model, but try to understand what their concept is (see hints below). Keep in mind that some models are only applicable to regression (and some only to 2- class-classification, so they might work here, but not with other problems).
 
 ```{r}
 
@@ -412,10 +414,22 @@ models$modelglm <- train(x = training[,2:60],
                          maximize = T, 
                          trControl = trControl)
 
+
+
+```
+
+## Compare model performances
+```{r}
 results <- resamples(models)
 summary(results)
 bwplot(results) 
 
+
+```
+
+## Compare the CV confusion matrixes, ROC, and AUC of those models. You can e.g. plot the test ROC curve of all models into one figure to allow for an easy comparison
+
+```{r}
 # test data model lda performance
 testPredictedlda <- predict(models$modellda, testing[,2:60] , type = 'prob')
 testConfMatrix <- confusionMatrix(data = testPredictedlda, reference = testing[,1])
@@ -441,9 +455,6 @@ testPredictedglm <- predict(models$modelglm, testing[,2:60]  , type = 'prob')
 testConfMatrix <- confusionMatrix(data = testPredictedglm, reference = testing[,1])
 testConfMatrix
 levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
-
-
-
 
 
 plot(roc(response = testing[,1],     predictor = testPredictedlda[,1]),     col = 1) 
