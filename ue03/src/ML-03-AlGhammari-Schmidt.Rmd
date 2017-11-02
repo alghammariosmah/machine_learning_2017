@@ -421,7 +421,7 @@ models$modelglm <- train(x = training[,2:60],
 ## Compare model performances
 ```{r}
 results <- resamples(models)
-summary(results)
+#summary(results)
 bwplot(results) 
 
 
