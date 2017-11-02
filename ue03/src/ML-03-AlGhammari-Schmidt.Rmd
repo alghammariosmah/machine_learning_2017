@@ -329,6 +329,130 @@ Test data size is not as important as training set. Test set assess the performa
 
 # Part 4
 
+
+```{r}
+
+library(caret)
+data(segmentationData)
+str(segmentationData)
+library(pROC)
+library(doMC) # paralellization
+registerDoMC(8) # register 8 cores (more cores require more RAM)
+
+
+# applied to the specific models 
+trControl <- trainControl(method = 'repeatedcv', 
+                          number = 10, 
+                          repeats = 5, 
+                          returnData = F, 
+                          classProbs = T, 
+                          summaryFunction = twoClassSummary,
+                          returnResamp = 'final', 
+                          allowParallel = T)
+
+
+nums <- sapply(segmentationData, is.numeric) # Filtering only numeric values
+numericData <- segmentationData[ , nums]
+
+numericData$Class <- segmentationData$Class
+col_idx <- grep("Class", names(numericData))
+numericData <- numericData[, c(col_idx, (1:ncol(numericData))[-col_idx])] # moving Class to the first column
+
+segmentationData <- numericData
+
+
+set.seed(123456)
+indexes_train <- createDataPartition(segmentationData$Class, p = 0.80, list = F) # indexes of training samples according to segmentationData[,1]
+indexes_test <- (1:nrow(segmentationData))[-indexes_train] # use all samples not in train as test samples
+
+training <- segmentationData[indexes_train,]
+testing <- segmentationData[indexes_test,]
+
+# aggregate all models in a list
+models <- list()
+
+models$modellda <- train(x = training[,2:60], 
+                  y = training[,1], # ensure this is a numeric for regression and a factor for classification
+                  preProcess = NULL, # center, scale, boxcox, pca, ...
+                  method = 'lda', 
+                  tuneGrid = NULL, 
+                  metric = 'ROC', 
+                  maximize = T, 
+                  trControl = trControl)
+
+
+models$modelKnn <- train( x = training[,2:60], 
+                          y = training[,1], 
+                          preProcess = NULL, 
+                          method = 'knn', 
+                          tuneGrid = expand.grid(k=1:10), 
+                          metric = 'ROC', 
+                          maximize = T, 
+                          trControl = trControl)
+#plot(models$modelKnn)
+
+
+getModelInfo('svmLinear')[[1]]$parameters
+models$modelsvmLinear <- train( x = training[,2:60], 
+                          y = training[,1], 
+                          preProcess = NULL, 
+                          method = 'svmLinear', 
+                          tuneGrid = NULL, #data.frame(.C = c(.25, .5, 1))
+                          metric = "ROC", 
+                          maximize = T, 
+                          trControl = trControl)
+
+
+models$modelglm <- train(x = training[,2:60], 
+                         y = training[,1], 
+                         preProcess = NULL, 
+                         method = 'glm', 
+                         tuneGrid = NULL, 
+                         metric = "ROC", 
+                         maximize = T, 
+                         trControl = trControl)
+
+results <- resamples(models)
+summary(results)
+bwplot(results) 
+
+# test data model lda performance
+testPredictedlda <- predict(models$modellda, testing[,2:60] , type = 'prob')
+testConfMatrix <- confusionMatrix(data = testPredictedlda, reference = testing[,1])
+testConfMatrix
+levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+
+
+# test data model knn performance 
+testPredictedknn <- predict(models$modelKnn, testing[,2:60]  , type = 'prob')
+testConfMatrix <- confusionMatrix(data = testPredictedknn, reference = testing[,1])
+testConfMatrix
+levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+
+
+# test data model Linear SVM performance 
+testPredictedLinearSVM <- predict(models$modelsvmLinear, testing[,2:60]  , type = 'prob')
+testConfMatrix <- confusionMatrix(data = testPredictedLinearSVM, reference = testing[,1])
+testConfMatrix
+levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+
+# test data model Linear SVM performance 
+testPredictedglm <- predict(models$modelglm, testing[,2:60]  , type = 'prob')
+testConfMatrix <- confusionMatrix(data = testPredictedglm, reference = testing[,1])
+testConfMatrix
+levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
+
+
+
+
+
+plot(roc(response = testing[,1],     predictor = testPredictedlda[,1]),     col = 1) 
+plot(roc(response = testing[,1],   predictor = testPredictedknn[,1]), col = 2, add = T) 
+plot(roc(response = testing[,1],  predictor = testPredictedLinearSVM[,1]),  col = 3, add = T)
+plot(roc(response = testing[,1],  predictor = testPredictedglm[,1]),  col = 4, add = T)
+abline(0,1, col='gray70') # diagonal line for EER
+legend('bottomright', legend=c('lda', 'knn', 'LinearSVM', 'glm'), lty=1, col=1:3, cex=0.9)
+```
 # Part 5
 
 ## Guidelines
