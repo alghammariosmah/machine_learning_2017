@@ -144,7 +144,7 @@ model <- train(x = data.frame(savedData[,2]),
                                         returnResamp = 'final',
                                         savePredictions = F,
                                         classProbs = F))
-model$results
+#model$results
 
 ```
 
@@ -220,8 +220,8 @@ model2 <- train(x = data.frame(training[,2]),
                                         returnResamp = 'final',
                                         savePredictions = F,
                                         classProbs = F))
-model2
-model2$results
+#model2
+#model2$results
 
 trainPredicted2 <- predict(model2, data.frame(training[,2]))
 summary(abs(trainPredicted2-training[,1])**2)
@@ -249,10 +249,10 @@ The best performance is reaching between 88% to 94% training set.
 ##You might encounter warnings like Warning: In lda.default(x, grouping, ...) : variables are collinear or warning: prediction from a rank-deficient fit may be misleading when training the model. You can ignore these warnings for now. 
 ##Repeat the above for increased partition sizes (always using the same seed for partitioning!). Double the size of the training partition (4%, 8%, ...) until the gap between training and test error closes. Which train/test partition size do you need to close this gap? Keep all created models and metric values for later comparison.
 
-```{r}
+```{r , results="hide"}
 library(caret)
 data(segmentationData)
-str(segmentationData)
+#str(segmentationData)
 library(doMC) 
 registerDoMC(8)
 
@@ -274,8 +274,8 @@ indexes_test <- (1:nrow(segmentationData))[-indexes_train] # use all samples not
 training <- segmentationData[indexes_train,]
 testing <- segmentationData[indexes_test,]
 
-names(getModelInfo('lda')) # linear discriminant analysis 
-getModelInfo('lda')[[1]]$parameters # ...with hyperparameters
+#names(getModelInfo('lda')) # linear discriminant analysis 
+#getModelInfo('lda')[[1]]$parameters # ...with hyperparameters
 modellda <- train(x = training[,2:60], 
                   y = training[,1], # ensure this is a numeric for regression and a factor for classification
                   preProcess = NULL, # center, scale, boxcox, pca, ...
@@ -291,21 +291,21 @@ modellda <- train(x = training[,2:60],
                                            returnResamp = 'final', 
                                            allowParallel = T))
 
-modellda
-modellda$results
+#modellda
+#modellda$results
 
 
 # Confusion matrixse
 # Training confusion Matrix
 trainPredicted <- predict(modellda, newdata = training[,2:60])
 trainConfMatrix <- confusionMatrix(data = trainPredicted, reference = training[,1]) 
-trainConfMatrix
+#trainConfMatrix
 levelplot(sweep(x = trainConfMatrix$table, STATS = colSums(trainConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
 
 # Test confusion matrix
 testPredicted <- predict(modellda, newdata = testing[,2:60])
 testConfMatrix <- confusionMatrix(data = testPredicted, reference = testing[,1])
-testConfMatrix
+#testConfMatrix
 levelplot(sweep(x = testConfMatrix$table, STATS = colSums(testConfMatrix$table), MARGIN = 2, FUN = '/'), col.regions=gray(100:0/100))
 
 
