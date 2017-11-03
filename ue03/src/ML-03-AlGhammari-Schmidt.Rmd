@@ -233,7 +233,7 @@ summary(abs(trainPredicted2-training[,1])**2)
 
 It is almost the same...
 ```{r}
-plot(trainPredicted2, training[,1]) 
+plot(trainPredicted2, training[,1], pch = '.')
 abline(0,1, col=2) 
 ```
 
