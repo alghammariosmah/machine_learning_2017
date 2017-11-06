@@ -1,0 +1,17 @@
+---
+title: "ML-05-AlGhammari-Schmidt"
+author: "Bernd Schmidt , Osamah Al-Ghammari"
+date: "November 03, 2017"
+output: pdf_document
+---
+
+```{r setup, message=FALSE, results='hide'}
+require(plyr)
+require(lattice)
+require(ggplot2)
+require(kernlab)
+require(caret)
+require(doMC)
+library(pROC)
+registerDoMC(3) 
+```

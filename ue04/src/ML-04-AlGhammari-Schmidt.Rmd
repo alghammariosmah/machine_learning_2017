@@ -1,0 +1,28 @@
+---
+title: "ML-04-AlGhammari-Schmidt"
+author: "Bernd Schmidt , Osamah Al-Ghammari"
+date: "November 03, 2017"
+output: pdf_document
+---
+
+```{r setup, message=FALSE, results='hide'}
+require(plyr)
+require(lattice)
+require(caret)
+```
+
+```{r read_images}
+# filedir
+filedir <- "../dat/dsr-preprocessed-1000x1333_faces_haar_gray_resized150_equalized_50x50"
+# get all filenames
+filenames <- list.files(filedir, pattern="*.png")
+# filter filename for each person
+filtered <- ldply(strsplit(filenames, split="_"))
+# rename columns for better understanding
+names(filtered) <- c("V1", "Pers", "Pic", "V4", "V5", "V6", "V7", "V8", "V9", "V10")
+# filter for person
+filtered[filtered$Pers == '10',]
+
+
+#ldply(dir(, full.names = T, pattern = 'png'), function(f) t(as.numeric(readPNG(f))))
+```
