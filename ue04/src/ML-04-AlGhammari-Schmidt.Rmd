@@ -34,11 +34,11 @@ faces_data <- faces$data
 ```{r feature_correlation}
 # feature correlation as plot
 #corrplot(cor(faces_data), 'circle') # addgrid.col = NA
-corrplot(cor(faces$data), tl.cex = 0.3) # addgrid.col = NA
+corrplot(cor(faces$data[1:100]), tl.cex = 0.3) # addgrid.col = NA
 # remove correlated variable using ?findCorrelation
 foundCorIndexes <- findCorrelation(cor(faces$data))
 foundCorIndexes
-corrplot(cor(faces$data[,-foundCorIndexes]), tl.cex = 0.3)
+#corrplot(cor(faces$data[,-foundCorIndexes]), tl.cex = 0.3)
 
 faces$data <- faces$data[,-foundCorIndexes]
 ```
@@ -79,5 +79,5 @@ varImp(model)
 predicted <- predict(model, newdata = testing$data)
 
 conf <- confusionMatrix(predicted, factor(testing$pers))
-
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
 ```
