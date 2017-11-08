@@ -6,23 +6,69 @@ output: pdf_document
 ---
 
 ```{r setup, message=FALSE, results='hide'}
+require(corrplot)
 require(plyr)
-require(lattice)
+require(png)
 require(caret)
+library(doMC)
+registerDoMC(3)
 ```
 
 ```{r read_images}
 # filedir
 filedir <- "../dat/dsr-preprocessed-1000x1333_faces_haar_gray_resized150_equalized_50x50"
 # get all filenames
-filenames <- list.files(filedir, pattern="*.png")
+filenames <- list.files(filedir, full.names = T, pattern="*.png")
 # filter filename for each person
-filtered <- ldply(strsplit(filenames, split="_"))
+faces <- ldply(strsplit(filenames, split="_"))[,8:9]
 # rename columns for better understanding
-names(filtered) <- c("V1", "Pers", "Pic", "V4", "V5", "V6", "V7", "V8", "V9", "V10")
-# filter for person
-filtered[filtered$Pers == '10',]
+names(faces) <- c("pers", "pic")
+faces$pers <- as.numeric(faces$pers)
+#faces$path <- filenames
 
+# load face data to data structure
+faces$data <- ldply(filenames, function(f) (t(as.numeric(readPNG(f)))))
 
-#ldply(dir(, full.names = T, pattern = 'png'), function(f) t(as.numeric(readPNG(f))))
+```
+
+```{r feature_correlation}
+# feature correlation as plot
+#corrplot(cor(faces_data), 'circle') # addgrid.col = NA
+corrplot(cor(faces$data), tl.cex = 0.3) # addgrid.col = NA
+# remove correlated variable using ?findCorrelation
+foundCorIndexes <- findCorrelation(cor(faces$data))
+foundCorIndexes
+corrplot(cor(faces$data[,-foundCorIndexes]), tl.cex = 0.3)
+
+faces$data_corr <- faces$data[,-foundCorIndexes]
+```
+
+```{r data_partitioining}
+# split into training and test data
+set.seed(1704)
+indexes_train <- createDataPartition(faces$pers, p=0.75, list = F)
+indexes_test <- (1:nrow(faces$data))[-indexes_train]
+
+training <- faces$data_corr[indexes_train,]
+testing <- faces$data_corr[indexes_test,]
+```
+
+```{r feature_selection}
+rfeRes <- rfe(x = training, y = faces$pers[indexes_train], rfeControl = rfeControl(functions = rfFuncs, method = 'repeatedcv', repeats = 5)) # more repeats are better
+rfeRes
+rfeRes$optVariables # 8/10 features
+```
+
+```{r model_training}
+model <- train(training,
+               factor(faces$pers),
+               method = 'knn',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trainControl(
+                 method = 'LOOCV',
+                 preProcOptions = list(thresh = 0.7)
+               )
+               )
+model
 ```
