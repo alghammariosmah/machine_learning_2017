@@ -56,7 +56,7 @@ testing <- faces[indexes_test,]
 ```{r feature_selection}
 sbfRes <- sbf(x = training$data, y = training$pers, sbfControl = sbfControl(functions = rfSBF, method = 'repeatedcv', repeats = 5)) # more repeats are better
 sbfRes
-sbfRes$optVariables # all 10 features
+sbfRes$optVariables
 faces$data <- faces$data[,sbfRes$optVariables]
 ```
 

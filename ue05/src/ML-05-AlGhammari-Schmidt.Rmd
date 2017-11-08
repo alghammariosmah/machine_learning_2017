@@ -15,3 +15,25 @@ require(doMC)
 library(pROC)
 registerDoMC(3) 
 ```
+
+```{r read data}
+filedir <- "../dat"
+  
+# get all filenames
+filenames <- list.files(filedir, full.names = T, pattern="*.csv")
+
+gestures <- ldply(filenames, read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('acc', 1:1000, sep='')))
+
+```
+
+```{r visualize}
+matplot(t(gestures[1:10,4:1003]), type='l', col=factor(gestures[1:10,1]))
+```
+
+```{r optimize}
+gestures <- laply(gestures[,4:1003], function(row) {
+  row <- row[!is.na(row)] # remove all NA values
+  # interpolate
+  # filter (runmed(11))
+})
+```
