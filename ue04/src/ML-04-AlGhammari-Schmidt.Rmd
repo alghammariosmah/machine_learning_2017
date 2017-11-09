@@ -31,17 +31,20 @@ faces$data <- ldply(filenames, function(f) (t(as.numeric(readPNG(f)))))
 faces_data <- faces$data
 ```
 
+To reduce the amount of features, the feature correlation is calculated and the features, correlating the most were removed.
+
 ```{r feature_correlation}
 # feature correlation as plot
-#corrplot(cor(faces_data), 'circle') # addgrid.col = NA
-corrplot(cor(faces$data[1:100]), tl.cex = 0.3) # addgrid.col = NA
+corrplot(cor(faces$data[,1:100]), tl.cex = 0.3) # addgrid.col = NA
 # remove correlated variable using ?findCorrelation
 foundCorIndexes <- findCorrelation(cor(faces$data))
-foundCorIndexes
-#corrplot(cor(faces$data[,-foundCorIndexes]), tl.cex = 0.3)
-
+#foundCorIndexes
+corrplot(cor(faces$data[,-foundCorIndexes]), tl.cex = 0.3)
+# remove the features from the data
 faces$data <- faces$data[,-foundCorIndexes]
 ```
+
+Partitioning the data so that for every person in the data there are 75% in the training and 25% in the test partition.
 
 ```{r data_partitioning}
 # split into training and test data
@@ -53,6 +56,9 @@ training <- faces[indexes_train,]
 testing <- faces[indexes_test,]
 ```
 
+Now running a feature selection to reduce the number of features even more.
+Using the wrapper would take way too much time.
+
 ```{r feature_selection}
 sbfRes <- sbf(x = training$data, y = training$pers, sbfControl = sbfControl(functions = rfSBF, method = 'repeatedcv', repeats = 5)) # more repeats are better
 sbfRes
@@ -60,24 +66,97 @@ sbfRes$optVariables
 faces$data <- faces$data[,sbfRes$optVariables]
 ```
 
-```{r model_training}
-model <- train(training$data,
+## Model Trianing
+### KNN
+
+For the first test, a *knn* model is used.
+The data is also preprocessed with **PCA**.
+
+```{r model training knn}
+models <- list()
+models$knn <- train(training$data,
                factor(training$pers),
                method = 'knn',
                preProcess = c('center', 'scale', 'pca'),
                metric = 'Kappa',
                trControl = trainControl(
                  method = 'LOOCV',
-                 preProcOptions = list(thresh = 0.7)
+                 preProcOptions = list(thresh = 0.9)
                )
                )
-model
-varImp(model)
+models$knn
+varImp(models$knn)
 ```
 
-```{r predict_test_data}
-predicted <- predict(model, newdata = testing$data)
+The predicted data can is very close to a complete match.
 
-conf <- confusionMatrix(predicted, factor(testing$pers))
+```{r predict_test_data knn}
+predicted <- predict(models$knn, newdata = testing$data)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing$pers, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+### LDA
+To compare the results, now a *lda* model with the same parameters is trained.
+
+```{r model training lda}
+models$lda <- train(training$data,
+               factor(training$pers),
+               method = 'lda',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trainControl(
+                 method = 'LOOCV',
+                 preProcOptions = list(thresh = 0.9)
+               )
+               )
+models$lda
+```
+
+And again the results were compared to the reference values
+
+```{r predict_test_data lda}
+predicted <- predict(models$lda, newdata = testing$data)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing$pers, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+### LDA2
+As a third test, the *lda2* model is used.
+
+```{r model training lda2}
+models$lda2 <- train(training$data,
+               factor(training$pers),
+               method = 'lda2',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trainControl(
+                 method = 'LOOCV',
+                 preProcOptions = list(thresh = 0.9)
+               )
+               )
+models$lda2
+```
+
+And the predicted values are compared to the reference values.
+
+```{r predict_test_data lda2}
+predicted <- predict(models$lda2, newdata = testing$data)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing$pers, u))
+conf <- confusionMatrix(t)
+
 levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
 ```
