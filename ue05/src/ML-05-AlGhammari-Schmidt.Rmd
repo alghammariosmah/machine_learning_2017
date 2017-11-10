@@ -8,11 +8,9 @@ output: pdf_document
 ```{r setup, message=FALSE, results='hide'}
 require(plyr)
 require(lattice)
-require(ggplot2)
-require(kernlab)
+require(corrplot)
 require(caret)
 require(doMC)
-library(pROC)
 registerDoMC(3)
 library(zoo)
 ```
@@ -43,14 +41,35 @@ After that, a rolling median is applied to the sample to smooth it.
 
 ```{r optimize}
 stepwidth <- 1/1000
-gestures_opt <- as.data.frame(t(apply(gestures, 1, function(r) {
+gestures_opt <- gestures[,1:3]
+gestures_opt[4:1003] <- as.data.frame(t(apply(gestures, 1, function(r) {
   row <- r[!is.na(r)] # remove all NA values
   row_approx <- approx(x = seq(0,1,1/(length(row[4:length(row)])-1)), y = row[4:length(row)], xout = seq(0,1,stepwidth), method = 'linear')$y # interpolate
   #row_runmed <- as.numeric(runmed(row_approx, k = 11)) # filter
-  rollapply(row_approx, 11, median, na.rm=T)
-  r[4:1003] <- row_approx[1:1000] # store calcuated values back to row with meta info
-  r
+  #rollapply(row_approx, 11, median, na.rm=T)
+  #r[,4:1003] <- row_approx[1:1000] # store calcuated values back to row with meta info
+  row_approx
 })
-))
+))[1:1000]
 matplot(t(gestures_opt[1:10,4:1003]), type='l', col=factor(gestures_opt[1:10,1]))
+```
+
+## Data Validation and Optimization
+
+```{r feature correlation}
+# feature correlation as plot
+corrplot(cor(gestures_opt[,4:100]), tl.cex = 0.3) # addgrid.col = NA
+# remove correlated variable using ?findCorrelation
+foundCorIndexes <- findCorrelation(cor(gestures_opt[,4:1003]))
+#foundCorIndexes
+corrplot(cor(gestures_opt[,-foundCorIndexes]), tl.cex = 0.3)
+# remove the features from the data
+gestures_opt <- gestures_opt[,-foundCorIndexes]
+```
+
+## Model Training
+Now we can use this data to train a model for detecting the gestures
+
+```{r model training}
+
 ```
