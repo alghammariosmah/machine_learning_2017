@@ -13,9 +13,11 @@ require(kernlab)
 require(caret)
 require(doMC)
 library(pROC)
-registerDoMC(3) 
-require(zoo)
+registerDoMC(3)
+library(zoo)
 ```
+
+# Gesture Recognition
 
 ```{r read data}
 filedir <- "../dat"
@@ -27,14 +29,28 @@ gestures <- ldply(filenames, read.table, sep=',', fill = T, col.names = c('gestu
 
 ```
 
+## Visualization
+
+Currently the samples have different lengths and there are **NA** at the start and/or the end of the sample.
+
 ```{r visualize}
 matplot(t(gestures[1:10,4:1003]), type='l', col=factor(gestures[1:10,1]))
 ```
 
+## Optimization
+For optimization, all **NA** values are removed and the values are interpolated to 1000 values per sample.
+After that, a rolling median is applied to the sample to smooth it.
+
 ```{r optimize}
-gestures <- ddply(gestures[,4:1003],1, fun = function(r) {
-  r <- r[!is.na(r),] # remove all NA values
-  r <- approx(x = 1:length(r), y = r, xout = seq(1,length(r),0.2), method = 'linear') # interpolate TODO: not working =/
-  r <- runmed(r, 11) # filter (runmed(11))
+stepwidth <- 1/1000
+gestures_opt <- as.data.frame(t(apply(gestures, 1, function(r) {
+  row <- r[!is.na(r)] # remove all NA values
+  row_approx <- approx(x = seq(0,1,1/(length(row[4:length(row)])-1)), y = row[4:length(row)], xout = seq(0,1,stepwidth), method = 'linear')$y # interpolate
+  #row_runmed <- as.numeric(runmed(row_approx, k = 11)) # filter
+  rollapply(row_approx, 11, median, na.rm=T)
+  r[4:1003] <- row_approx[1:1000] # store calcuated values back to row with meta info
+  r
 })
+))
+matplot(t(gestures_opt[1:10,4:1003]), type='l', col=factor(gestures_opt[1:10,1]))
 ```
