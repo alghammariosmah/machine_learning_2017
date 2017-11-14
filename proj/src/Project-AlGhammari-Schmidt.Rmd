@@ -1,0 +1,6 @@
+---
+title: "Project-AlGhammari-Schmidt"
+author: "Bernd Schmidt , Osamah Al-Ghammari"
+date: "November 14, 2017"
+output: pdf_document
+---
