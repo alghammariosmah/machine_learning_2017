@@ -49,7 +49,7 @@ optimize <- function(r) {
   row <- r[!is.na(r)] # remove all NA values
   row_approx <- approx(x = seq(0,1,1/(length(row[4:length(row)])-1)), y = row[4:length(row)], xout = seq(0,1,stepwidth), method = 'linear')$y # interpolate
   #row_runmed <- as.numeric(runmed(row_approx, k = 11)) # filter
-  #rollapply(row_approx, 11, median, na.rm=T)
+  rollapply(row_approx, 11, median, na.rm=T)
   #r[,4:1003] <- row_approx[1:1000] # store calcuated values back to row with meta info
   row_approx
 }
@@ -110,6 +110,7 @@ gestures_opt$data <- gestures_opt$data[,sbfRes$optVariables]
 ## Model Training
 Now we can use this data to train a model for detecting the gestures
 
+### KNN
 ```{r model training knn}
 models <- list()
 models$knn <- train(training,
@@ -131,6 +132,61 @@ predicted <- predict(models$knn, newdata = testing)
 
 # to ensure, that also when one level is not predicted, the results can be displayed
 u = union(predicted, testing_gest)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+### LDA
+To compare the results, now a *lda* model with the same parameters is trained.
+
+```{r model training lda}
+models$lda <- train(training,
+               factor(training_gest),
+               method = 'lda',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trainControl(
+                 method = 'LOOCV',
+                 preProcOptions = list(thresh = 0.9)
+               )
+               )
+models$lda
+```
+
+```{r predict_test_data lda}
+predicted <- predict(models$lda, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing_gest)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+### LDA2
+
+```{r model training lda2}
+models$lda2 <- train(training,
+               factor(training_gest),
+               method = 'lda2',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trainControl(
+                 method = 'LOOCV',
+                 preProcOptions = list(thresh = 0.9)
+               )
+               )
+models$lda2
+```
+
+```{r predict_test_data lda2}
+predicted <- predict(models$lda2, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
 t = table(factor(predicted, u), factor(testing_gest, u))
 conf <- confusionMatrix(t)
 
