@@ -8,18 +8,35 @@ output: pdf_document
 # Project MyoHand
 Detecting gestures from EMG data provided by the MYO Armband.
 
+```{r read data}
+filedir <- '../dat'
+
+filenames <- list.files(filedir, full.names = T, pattern="*.csv")
+
+gestures <- list()
+gestures$emg0 <- ldply(filenames[1], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg1 <- ldply(filenames[2], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg2 <- ldply(filenames[3], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg3 <- ldply(filenames[4], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg4 <- ldply(filenames[5], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg5 <- ldply(filenames[6], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg6 <- ldply(filenames[7], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg7 <- ldply(filenames[8], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+```
 
 ## Calculating the variance threshhold
-
 To detect the start and the end of each gesture, the variance over a specific window is calculated.
 If the value is greater than the threshold, the signal will be cut.
+
+### Magnitude over all 8 EMG values
 For this purpose we will utilize the magnitude of all eight EMG values
 
 ```{r calculate magnitude}
-gestures_opt$mag <- gestures_opt$x[,1:3]
-gestures_opt$mag[,4:1003] <- mapply(function(x,y,z) {
-  m <- sqrt(x^2 + y^2 + z ^ 2)
+gestures$mag <- as.data.frame(mapply(function(emg0, emg1, emg2, emg3, emg4, emg5, emg6, emg7) {
+  m <- sqrt(emg0^2 + emg1^2 + emg2^2 + emg3^2 + emg4^2 + emg5^2 + emg6^2 + emg7^2)
   m
-}, gestures_opt$x[,4:1003], gestures_opt$y[,4:1003], gestures_opt$z[,4:1003])[,1:1000]
-matplot(t(gestures_opt$mag[1:8,4:1003]), type='l', col=factor(gestures_opt$mag[1:8,1]))
+}, gestures$emg0[,4:253], gestures$emg1[,4:253], gestures$emg2[,4:253], gestures$emg3[,4:253], gestures$emg4[,4:253], gestures$emg5[,4:253], gestures$emg6[,4:253], gestures$emg7[,4:253]))
+matplot(t(gestures$mag[1:10,]), type='l')
 ```
+
+### Calculate variance using STD
