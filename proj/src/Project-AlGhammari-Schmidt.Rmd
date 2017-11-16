@@ -74,14 +74,14 @@ for (i in 1:dim(gestures$mag)[1]) {
   mag <- mag[start:stop]
   start <- start + 3
   stop <- stop + 3
-  emg0 <- gestures$emg0[start:stop]
-  emg1 <- gestures$emg1[start:stop]
-  emg2 <- gestures$emg2[start:stop]
-  emg3 <- gestures$emg3[start:stop]
-  emg4 <- gestures$emg4[start:stop]
-  emg5 <- gestures$emg5[start:stop]
-  emg6 <- gestures$emg6[start:stop]
-  emg7 <- gestures$emg7[start:stop]
+  emg0 <- gestures$emg0[i,start:stop]
+  emg1 <- gestures$emg1[i,start:stop]
+  emg2 <- gestures$emg2[i,start:stop]
+  emg3 <- gestures$emg3[i,start:stop]
+  emg4 <- gestures$emg4[i,start:stop]
+  emg5 <- gestures$emg5[i,start:stop]
+  emg6 <- gestures$emg6[i,start:stop]
+  emg7 <- gestures$emg7[i,start:stop]
   # 4 approx
   mag_approx <- approx(x = seq(0,1,1/(length(mag)-1)), y = mag, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
   
@@ -105,5 +105,5 @@ for (i in 1:dim(gestures$mag)[1]) {
   gestures$emg6[i,4:253] <- as.data.frame(t(emg6_approx))
   gestures$emg7[i,4:253] <- as.data.frame(t(emg7_approx))
 }
-matplot(t(gestures$mag[1:10,]), type='l')
+matplot(t(gestures$new_mag[1:10,]), type='l')
 ```
