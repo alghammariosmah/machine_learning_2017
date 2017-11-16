@@ -49,39 +49,32 @@ optimize <- function(r) {
   row <- r[!is.na(r)] # remove all NA values
   row_approx <- approx(x = seq(0,1,1/(length(row[4:length(row)])-1)), y = row[4:length(row)], xout = seq(0,1,stepwidth), method = 'linear')$y # interpolate
   #row_runmed <- as.numeric(runmed(row_approx, k = 11)) # filter
-  rollapply(row_approx, 11, median, na.rm=T)
-  #r[,4:1003] <- row_approx[1:1000] # store calcuated values back to row with meta info
-  row_approx
+  rollapply(row_approx, 30, median, na.rm=T)
+  row_approx[1:1000]
 }
 gestures_opt <- list()
-gestures_opt$x <- gestures$x[,1:3]
-gestures_opt$y <- gestures$y[,1:3]
-gestures_opt$z <- gestures$z[,1:3]
-gestures_opt$x[4:1003] <- as.data.frame(t(apply(gestures$x, 1, optimize)
-))[1:1000]
-gestures_opt$y[4:1003] <- as.data.frame(t(apply(gestures$y, 1, optimize)
-))[1:1000]
-gestures_opt$z[4:1003] <- as.data.frame(t(apply(gestures$z, 1, optimize)
-))[1:1000]
-gestures_opt$gesture <- gestures_opt$x[,1]
-gestures_opt$data <- gestures_opt$x[,4:1003]
-gestures_opt$data[,1001:2000] <- gestures_opt$y[,4:1003]
-gestures_opt$data[,2001:3000] <- gestures_opt$z[,4:1003]
-matplot(t(gestures_opt$x[1:8,4:1003]), type='l', col=factor(gestures_opt$x[1:8,1]))
+gestures_opt$x <- as.data.frame(t(apply(gestures$x, 1, optimize)))
+gestures_opt$y <- as.data.frame(t(apply(gestures$y, 1, optimize)))
+gestures_opt$z <- as.data.frame(t(apply(gestures$z, 1, optimize)))
+
+gestures_opt$gesture <- gestures$x[,1]
+gestures_opt$data <- gestures_opt$x
+gestures_opt$data[,1001:2000] <- gestures_opt$y
+gestures_opt$data[,2001:3000] <- gestures_opt$z
+matplot(t(gestures_opt$data[1:8,1:1000]), type='l', col=factor(gestures_opt$gesture[1:8]))
 ```
 
 ## Data Validation and Optimization
 
 ```{r feature correlation}
-gestures_data <- gestures_opt$data
 # feature correlation as plot
 corrplot(cor(gestures_opt$data[,4:100]), tl.cex = 0.3) # addgrid.col = NA
 # remove correlated variable using ?findCorrelation
-foundCorIndexes <- findCorrelation(cor(gestures_data))
+foundCorIndexes <- findCorrelation(cor(gestures_opt$data))
 #foundCorIndexes
-corrplot(cor(gestures_data[,-foundCorIndexes]), tl.cex = 0.3)
+corrplot(cor(gestures_opt$data[,-foundCorIndexes]), tl.cex = 0.3)
 # remove the features from the data
-gestures_opt$data <- gestures_data[,-foundCorIndexes]
+gestures_opt$data <- gestures_opt$data[,-foundCorIndexes]
 ```
 
 ## Data Partitioning
@@ -111,6 +104,7 @@ gestures_opt$data <- gestures_opt$data[,sbfRes$optVariables]
 Now we can use this data to train a model for detecting the gestures
 
 ### KNN
+
 ```{r model training knn}
 models <- list()
 models$knn <- train(training,
@@ -191,4 +185,100 @@ t = table(factor(predicted, u), factor(testing_gest, u))
 conf <- confusionMatrix(t)
 
 levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+### Neural Network
+
+```{r train model neural network}
+models$nn <- train(x = training,
+           y = training_gest, # only use train data here!
+           method = 'nnet', 
+           metric = 'Kappa', 
+           tuneGrid = expand.grid(size=9:17, decay=3**(-1:3)), # nnet parameters: size = #neurons in hidden layer, decay = weigth decay = regularization = overfitting protection
+           trControl = trainControl(method = 'repeatedcv', 
+                                    number = 10, 
+                                    repeats = 20, 
+                                    returnResamp = 'final', 
+                                    returnData = F, 
+                                    savePredictions = T, 
+                                    allowParallel = T))
+```
+
+```{r display nn}
+print(models$nn)
+plot(models$nn, scales = list(x = list(log = 3)))
+levelplot(x = Kappa ~ size * decay, data = models$nn$results[models$nn$results$decay!=3 & models$nn$results$size != 1,], col.regions=gray(100:0/100), scales=list(y=list(log=3)))
+# nnet plots: https://beckmw.wordpress.com/2013/11/14/visualizing-neural-networks-in-r-update/
+library(devtools)
+source_url('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
+plot.nnet(models$nn$finalModel)
+```
+
+```{r predict_test_data nn}
+predicted <- predict(models$nn, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+### SVM
+
+```{r train model svm}
+train_model <- function(method, tuneGrid=NULL) {
+  train(x = training, # in real life apps only use train data here!
+        y = training_gest, # in real life apps only use train data here!
+        method = method, 
+        metric = 'Kappa', 
+        tuneGrid = tuneGrid,
+        trControl = trainControl(method = 'repeatedcv', 
+                                 number = 10, 
+                                 repeats = 20, 
+                                 returnResamp = 'final', 
+                                 returnData = F, 
+                                 savePredictions = T, 
+                                 allowParallel = T))
+}
+models$svmLinear <- train_model('svmLinear', tuneGrid = expand.grid(C=3**(-5:5)))
+models$svmRadial <- train_model('svmRadial', tuneGrid = expand.grid(C=3**(-5:5), sigma=3**(-5:5)))
+```
+
+```{r display model svm}
+print(plot(models$svmLinear, scales=list(x=list(log=3))))
+print(plot(models$svmRadial, scales=list(x=list(log=3))))
+```
+
+```{r predict_test_data svm linear}
+predicted <- predict(models$svmLinear, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+```{r predict_test_data svm radial}
+predicted <- predict(models$svmRadial, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+## Result Comparision
+
+```{r result comparison}
+# save models to file to ensure that the results were not lost
+saveRDS(object = models, file = "gesture_models.RDS")
+results <- resamples(models)
+summary(results)
+bwplot(results)
 ```
