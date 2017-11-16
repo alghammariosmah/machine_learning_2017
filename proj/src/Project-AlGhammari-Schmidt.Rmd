@@ -5,6 +5,15 @@ date: "November 14, 2017"
 output: pdf_document
 ---
 
+```{r setup, message=FALSE, results='hide'}
+require(plyr)
+require(corrplot)
+require(caret)
+require(doMC)
+registerDoMC(3)
+require(zoo)
+```
+
 # Project MyoHand
 Detecting gestures from EMG data provided by the MYO Armband.
 
@@ -39,4 +48,62 @@ gestures$mag <- as.data.frame(mapply(function(emg0, emg1, emg2, emg3, emg4, emg5
 matplot(t(gestures$mag[1:10,]), type='l')
 ```
 
-### Calculate variance using STD
+### Calculate variance using the 25% quantile
+
+```{r sd of each sample}
+gestures$q25 <- as.data.frame(apply(gestures$mag, 1 ,function(m) {
+  q25 <- quantile(m, na.rm = T)[[2]]
+  q25
+}))
+```
+
+### Stripping the data for all values below this quanitle
+
+```{r strip values}
+stepwidth <- 1/250
+gestures$new_mag <- data.frame(matrix(NA, ncol = 250))
+for (i in 1:dim(gestures$mag)[1]) {
+  # 1 remove NAs
+  
+  # 2 pre filter
+  mag <- gestures$mag[i,]
+  #rollapply(mag, 11, median, na.rm = T)
+  # 3 cut
+  start <- which.max(mag > gestures$q25[i,])
+  stop <- which.max(rev(mag) > gestures$q25[i,])
+  mag <- mag[start:stop]
+  start <- start + 3
+  stop <- stop + 3
+  emg0 <- gestures$emg0[start:stop]
+  emg1 <- gestures$emg1[start:stop]
+  emg2 <- gestures$emg2[start:stop]
+  emg3 <- gestures$emg3[start:stop]
+  emg4 <- gestures$emg4[start:stop]
+  emg5 <- gestures$emg5[start:stop]
+  emg6 <- gestures$emg6[start:stop]
+  emg7 <- gestures$emg7[start:stop]
+  # 4 approx
+  mag_approx <- approx(x = seq(0,1,1/(length(mag)-1)), y = mag, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  
+  emg0_approx <- approx(x = seq(0,1,1/(length(emg0)-1)), y = emg0, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg1_approx <- approx(x = seq(0,1,1/(length(emg1)-1)), y = emg1, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg2_approx <- approx(x = seq(0,1,1/(length(emg2)-1)), y = emg2, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg3_approx <- approx(x = seq(0,1,1/(length(emg3)-1)), y = emg3, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg4_approx <- approx(x = seq(0,1,1/(length(emg4)-1)), y = emg4, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg5_approx <- approx(x = seq(0,1,1/(length(emg5)-1)), y = emg5, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg6_approx <- approx(x = seq(0,1,1/(length(emg6)-1)), y = emg6, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg7_approx <- approx(x = seq(0,1,1/(length(emg7)-1)), y = emg7, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  # 5 filter
+  
+  gestures$new_mag[i,] <- as.data.frame(t(mag_approx))
+  gestures$emg0[i,4:253] <- as.data.frame(t(emg0_approx))
+  gestures$emg1[i,4:253] <- as.data.frame(t(emg1_approx))
+  gestures$emg2[i,4:253] <- as.data.frame(t(emg2_approx))
+  gestures$emg3[i,4:253] <- as.data.frame(t(emg3_approx))
+  gestures$emg4[i,4:253] <- as.data.frame(t(emg4_approx))
+  gestures$emg5[i,4:253] <- as.data.frame(t(emg5_approx))
+  gestures$emg6[i,4:253] <- as.data.frame(t(emg6_approx))
+  gestures$emg7[i,4:253] <- as.data.frame(t(emg7_approx))
+}
+matplot(t(gestures$mag[1:10,]), type='l')
+```
