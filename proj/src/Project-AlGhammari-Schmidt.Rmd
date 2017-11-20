@@ -127,7 +127,20 @@ for (i in 1:dim(gestures$mag)[1]) {
 matplot(t(gestures$new_mag[1:10,]), type='l')
 matplot(t(gestures$emg0[1:10,-(1:3)]), type='l')
 ```
+## Data Validation and Optimization
 
+### Feature Correlation
+
+```{r feature correlation}
+# feature correlation as plot
+corrplot(cor(gestures$data[,4:100]), tl.cex = 0.3) # addgrid.col = NA
+# remove correlated variable using ?findCorrelation
+foundCorIndexes <- findCorrelation(cor(gestures$data))
+#foundCorIndexes
+corrplot(cor(gestures$data[,-foundCorIndexes]), tl.cex = 0.3)
+# remove the features from the data
+gestures$data <- gestures$data[,-foundCorIndexes]
+```
 
 ## Data Partitioning
 
@@ -151,15 +164,51 @@ models <- list()
 
 ```{r specify train control}
 trControl <- trainControl(
-                 method = 'LOOCV',
-                 preProcOptions = list(thresh = 0.9),
-                 returnResamp = 'final',
-                 returnData = F,
-                 savePredictions = T,
-                 allowParallel = T
-               )
+    method = 'repeatedcv', # none, cv, repeatedcv, LOOCV, ...
+    number = 10, # nr of CV partitions
+    repeats = 20, # nr of partitioning repetitions
+    returnData = F, 
+    # classProbs = T, # enable computation of class probabilities?
+    # summaryFunction = twoClassSummary, # use when classifying two classes 
+    returnResamp = 'final', # return CV partition results for best model
+    allowParallel = T
+)
+
+#trControl <- trainControl(
+#                 method = 'LOOCV',
+#                 preProcOptions = list(thresh = 0.9),
+#                 returnResamp = 'final',
+#                 returnData = F,
+#                 savePredictions = T,
+#                 allowParallel = T
+#               )
 ```
 
+### KNN
+
+```{r model training knn}
+models <- list()
+models$knn <- train(training,
+               factor(training_gest),
+               method = 'knn',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trControl
+               )
+models$knn
+varImp(models$knn)
+```
+
+```{r predict_test_data knn}
+predicted <- predict(models$knn, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing_gest)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
 
 ### LDA
 To compare the results, now a *lda* model with the same parameters is trained.
@@ -257,7 +306,7 @@ levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`),
 
 ```{r result comparison}
 # save models to file to ensure that the results were not lost
-saveRDS(object = models, file = "gesture_models.RDS")
+saveRDS(object = models, file = "project_models.RDS")
 results <- resamples(models)
 summary(results)
 bwplot(results)

@@ -105,13 +105,24 @@ Now we can use this data to train a model for detecting the gestures
 
 ```{r specify train control}
 trControl <- trainControl(
-                 method = 'LOOCV',
-                 preProcOptions = list(thresh = 0.9),
-                 returnResamp = 'final',
-                 returnData = F,
-                 savePredictions = T,
-                 allowParallel = T
-               )
+    method = 'repeatedcv', # none, cv, repeatedcv, LOOCV, ...
+    number = 10, # nr of CV partitions
+    repeats = 20, # nr of partitioning repetitions
+    returnData = F, 
+    # classProbs = T, # enable computation of class probabilities?
+    # summaryFunction = twoClassSummary, # use when classifying two classes 
+    returnResamp = 'final', # return CV partition results for best model
+    allowParallel = T
+)
+
+#trControl <- trainControl(
+#                 method = 'LOOCV',
+#                 preProcOptions = list(thresh = 0.9),
+#                 returnResamp = 'final',
+#                 returnData = F,
+#                 savePredictions = T,
+#                 allowParallel = T
+#               )
 ```
 
 ### KNN
@@ -265,7 +276,7 @@ conf <- confusionMatrix(t)
 levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
 ```
 
-## Result Comparision
+## Result Comparison
 
 ```{r result comparison}
 # save models to file to ensure that the results were not lost
