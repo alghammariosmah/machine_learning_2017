@@ -103,6 +103,17 @@ gestures_opt$data <- gestures_opt$data[,sbfRes$optVariables]
 ## Model Training
 Now we can use this data to train a model for detecting the gestures
 
+```{r specify train control}
+trControl <- trainControl(
+                 method = 'LOOCV',
+                 preProcOptions = list(thresh = 0.9),
+                 returnResamp = 'final',
+                 returnData = F,
+                 savePredictions = T,
+                 allowParallel = T
+               )
+```
+
 ### KNN
 
 ```{r model training knn}
@@ -112,10 +123,7 @@ models$knn <- train(training,
                method = 'knn',
                preProcess = c('center', 'scale', 'pca'),
                metric = 'Kappa',
-               trControl = trainControl(
-                 method = 'LOOCV',
-                 preProcOptions = list(thresh = 0.9)
-               )
+               trControl = trControl
                )
 models$knn
 varImp(models$knn)
@@ -141,10 +149,7 @@ models$lda <- train(training,
                method = 'lda',
                preProcess = c('center', 'scale', 'pca'),
                metric = 'Kappa',
-               trControl = trainControl(
-                 method = 'LOOCV',
-                 preProcOptions = list(thresh = 0.9)
-               )
+               trControl = trControl
                )
 models$lda
 ```
@@ -168,10 +173,7 @@ models$lda2 <- train(training,
                method = 'lda2',
                preProcess = c('center', 'scale', 'pca'),
                metric = 'Kappa',
-               trControl = trainControl(
-                 method = 'LOOCV',
-                 preProcOptions = list(thresh = 0.9)
-               )
+               trControl = trControl
                )
 models$lda2
 ```
@@ -195,13 +197,8 @@ models$nn <- train(x = training,
            method = 'nnet', 
            metric = 'Kappa', 
            tuneGrid = expand.grid(size=9:17, decay=3**(-1:3)), # nnet parameters: size = #neurons in hidden layer, decay = weigth decay = regularization = overfitting protection
-           trControl = trainControl(method = 'repeatedcv', 
-                                    number = 10, 
-                                    repeats = 20, 
-                                    returnResamp = 'final', 
-                                    returnData = F, 
-                                    savePredictions = T, 
-                                    allowParallel = T))
+           trControl = trControl
+)
 ```
 
 ```{r display nn}
@@ -234,13 +231,8 @@ train_model <- function(method, tuneGrid=NULL) {
         method = method, 
         metric = 'Kappa', 
         tuneGrid = tuneGrid,
-        trControl = trainControl(method = 'repeatedcv', 
-                                 number = 10, 
-                                 repeats = 20, 
-                                 returnResamp = 'final', 
-                                 returnData = F, 
-                                 savePredictions = T, 
-                                 allowParallel = T))
+        trControl = trControl
+  )
 }
 models$svmLinear <- train_model('svmLinear', tuneGrid = expand.grid(C=3**(-5:5)))
 models$svmRadial <- train_model('svmRadial', tuneGrid = expand.grid(C=3**(-5:5), sigma=3**(-5:5)))
