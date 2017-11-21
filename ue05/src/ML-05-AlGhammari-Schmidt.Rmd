@@ -103,6 +103,10 @@ gestures_opt$data <- gestures_opt$data[,sbfRes$optVariables]
 ## Model Training
 Now we can use this data to train a model for detecting the gestures
 
+```{r initialize models}
+models <- list()
+```
+
 ```{r specify train control}
 trControl <- trainControl(
     method = 'repeatedcv', # none, cv, repeatedcv, LOOCV, ...
@@ -128,7 +132,6 @@ trControl <- trainControl(
 ### KNN
 
 ```{r model training knn}
-models <- list()
 models$knn <- train(training,
                factor(training_gest),
                method = 'knn',
@@ -137,7 +140,6 @@ models$knn <- train(training,
                trControl = trControl
                )
 models$knn
-varImp(models$knn)
 ```
 
 ```{r predict_test_data knn}
