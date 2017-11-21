@@ -45,7 +45,7 @@ gestures$mag <- as.data.frame(mapply(function(emg0, emg1, emg2, emg3, emg4, emg5
   m <- sqrt(emg0^2 + emg1^2 + emg2^2 + emg3^2 + emg4^2 + emg5^2 + emg6^2 + emg7^2)
   m
 }, gestures$emg0[,4:253], gestures$emg1[,4:253], gestures$emg2[,4:253], gestures$emg3[,4:253], gestures$emg4[,4:253], gestures$emg5[,4:253], gestures$emg6[,4:253], gestures$emg7[,4:253]))
-matplot(t(gestures$mag[1:10,]), type='l')
+matplot(t(gestures$mag[1,]), type='l')
 ```
 
 ### Calculate variance using the 25% quantile
@@ -63,12 +63,12 @@ gestures$q25 <- as.data.frame(apply(gestures$mag, 1 ,function(m) {
 stepwidth <- 1/250
 gestures$new_mag <- data.frame(matrix(NA, ncol = 250))
 gestures$data <- data.frame(matrix(NA, ncol = 2003))
-for (i in 1:dim(gestures$mag)[1]) {
+for (i in 1:(dim(gestures$mag)[1])) {
   # 1 remove NAs
-  
-  # 2 pre filter
   mag <- gestures$mag[i,]
-  #rollapply(mag, 11, median, na.rm = T)
+  mag[is.na(mag)] <- 0
+  # 2 pre filter
+  mag <- rollapply(data = mag[!is.na(mag)], width = 10, FUN = median)
   # 3 cut
   start <- which.max(mag > gestures$q25[i,])
   stop <- length(mag) - which.max(rev(mag) > gestures$q25[i,])
@@ -83,15 +83,15 @@ for (i in 1:dim(gestures$mag)[1]) {
   emg5 <- gestures$emg5[i,start:stop]
   emg6 <- gestures$emg6[i,start:stop]
   emg7 <- gestures$emg7[i,start:stop]
-  # remove NAs
-  emg0 <- emg0[,!is.na(emg0)]
-  emg1 <- emg1[,!is.na(emg1)]
-  emg2 <- emg2[,!is.na(emg2)]
-  emg3 <- emg3[,!is.na(emg3)]
-  emg4 <- emg4[,!is.na(emg4)]
-  emg5 <- emg5[,!is.na(emg5)]
-  emg6 <- emg6[,!is.na(emg6)]
-  emg7 <- emg7[,!is.na(emg7)]
+  # remove NAs and apply runmed
+  emg0 <- rollapply(data = emg0[!is.na(emg0)], width = 10, FUN = median)
+  emg1 <- rollapply(data = emg1[!is.na(emg1)], width = 10, FUN = median)
+  emg2 <- rollapply(data = emg2[!is.na(emg2)], width = 10, FUN = median)
+  emg3 <- rollapply(data = emg3[!is.na(emg3)], width = 10, FUN = median)
+  emg4 <- rollapply(data = emg4[!is.na(emg4)], width = 10, FUN = median)
+  emg5 <- rollapply(data = emg5[!is.na(emg5)], width = 10, FUN = median)
+  emg6 <- rollapply(data = emg6[!is.na(emg6)], width = 10, FUN = median)
+  emg7 <- rollapply(data = emg7[!is.na(emg7)], width = 10, FUN = median)
   # 4 approx
   mag_approx <- approx(x = seq(0,1,1/(length(mag)-1)), y = mag, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
   
@@ -105,6 +105,7 @@ for (i in 1:dim(gestures$mag)[1]) {
   emg7_approx <- approx(x = seq(0,1,1/(length(emg7)-1)), y = emg7, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
   # 5 filter
   
+  # 6 append to one line
   gestures$new_mag[i,] <- as.data.frame(t(mag_approx))
   gestures$emg0[i,4:253] <- as.data.frame(t(emg0_approx))
   gestures$emg1[i,4:253] <- as.data.frame(t(emg1_approx))
@@ -156,6 +157,15 @@ testing <- gestures$data[indexes_test,]
 testing_gest <- gestures$emg0[indexes_test,1]
 ```
 
+## Feature Selection
+
+```{r feature_selection}
+sbfRes <- sbf(x = training, y = training_gest, sbfControl = sbfControl(functions = rfSBF, method = 'repeatedcv', repeats = 5)) # more repeats are better
+sbfRes
+sbfRes$optVariables
+gestures_opt$data <- gestures_opt$data[,sbfRes$optVariables]
+```
+
 ## Model Training
 
 ```{r initialize models list}
@@ -187,7 +197,6 @@ trControl <- trainControl(
 ### KNN
 
 ```{r model training knn}
-models <- list()
 models$knn <- train(training,
                factor(training_gest),
                method = 'knn',
@@ -196,7 +205,6 @@ models$knn <- train(training,
                trControl = trControl
                )
 models$knn
-varImp(models$knn)
 ```
 
 ```{r predict_test_data knn}
