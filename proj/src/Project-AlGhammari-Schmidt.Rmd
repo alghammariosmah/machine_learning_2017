@@ -2,7 +2,9 @@
 title: "Project-AlGhammari-Schmidt"
 author: "Bernd Schmidt , Osamah Al-Ghammari"
 date: "November 14, 2017"
-output: pdf_document
+output:
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, message=FALSE, results='hide'}
@@ -180,12 +182,12 @@ testing_gest <- gestures$emg0[indexes_test,1]
 ```
 
 ## Feature Selection
-
+We tried to use feature selection, but it outputted less samples which resulted with poor training and testing accuracies. So, we had to skip feature selection.
 ```{r feature_selection}
-sbfRes <- sbf(x = training, y = training_gest, sbfControl = sbfControl(functions = rfSBF, method = 'repeatedcv', repeats = 5)) # more repeats are better
-sbfRes
-sbfRes$optVariables
-gestures_opt$data <- gestures_opt$data[,sbfRes$optVariables]
+#sbfRes <- sbf(x = training, y = training_gest, sbfControl = sbfControl(functions = rfSBF, method = 'repeatedcv', repeats = 5)) # more repeats are better
+#sbfRes
+#sbfRes$optVariables
+#gestures_opt$data <- gestures_opt$data[,sbfRes$optVariables]
 ```
 
 # Model Training
