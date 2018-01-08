@@ -21,7 +21,7 @@ The MYO armband offers 8 values (one for each sensor) of EMG data. Those values 
 and also not sorted according to the orientation of the armband.
 The gestures were performed in the following order: Fist - Spread Fingers - Wave Out - Wave In - Double Tap. According to the obtained raw data, the raw values are not very useable to detect gestures or movements.
 
-![image](C:\Users\Alghammari\Desktop\Winter Semetser 2017-2018\Machine Learning\project\New folder\capture.PNG)
+![image](MachineLearning\proj\src\capture.PNG)
 
 
 The following code allows to read the recorded unprocessed data from the file provided by the MYO Armband.
