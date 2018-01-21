@@ -1,0 +1,4 @@
+"0","# remove correlated variable using ?findCorrelation"
+"0","foundCorIndexes <- findCorrelation(cor(gestures$data))"
+"0","#foundCorIndexes"
+"0","corrplot(cor(gestures$data[,-foundCorIndexes]), tl.cex = 0.3)"

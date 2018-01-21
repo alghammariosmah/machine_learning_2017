@@ -1,0 +1,5 @@
+"0","gestures$mag <- as.data.frame(mapply(function(emg0, emg1, emg2, emg3, emg4, emg5, emg6, emg7) {"
+"0","  m <- sqrt(emg0^2 + emg1^2 + emg2^2 + emg3^2 + emg4^2 + emg5^2 + emg6^2 + emg7^2)"
+"0","  m"
+"0","}, gestures$emg0[,4:253], gestures$emg1[,4:253], gestures$emg2[,4:253], gestures$emg3[,4:253], gestures$emg4[,4:253], gestures$emg5[,4:253], gestures$emg6[,4:253], gestures$emg7[,4:253]))"
+"0","matplot(t(gestures$mag[1:10,]), type='l')"

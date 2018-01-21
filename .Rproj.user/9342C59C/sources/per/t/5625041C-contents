@@ -1,0 +1,350 @@
+---
+title: "Project-AlGhammari-Schmidt"
+author: "Bernd Schmidt , Osamah Al-Ghammari"
+date: "January 8, 2017"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, message=FALSE, results='hide', message=F, warning=F}
+require(plyr)
+require(corrplot)
+require(caret)
+require(doMC)
+registerDoMC(3)
+require(zoo)
+```
+
+# Acquiring data and data recording
+The MYO armband offers 8 values (one for each sensor) of EMG data. Those values are not preprocessed
+and also not sorted according to the orientation of the armband.
+The gestures were performed in the following order: Fist - Spread Fingers - Wave Out - Wave In - Double Tap. According to the obtained raw data, the raw values are not very useable to detect gestures or movements.
+
+![image](\capture.PNG)
+
+
+The following code allows to read the recorded unprocessed data from the file provided by the MYO Armband.
+
+```{r read data}
+filedir <- '../dat'
+
+filenames <- list.files(filedir, full.names = T, pattern="*.csv")
+
+gestures <- list()
+gestures$emg0 <- ldply(filenames[1], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg1 <- ldply(filenames[2], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg2 <- ldply(filenames[3], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg3 <- ldply(filenames[4], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg4 <- ldply(filenames[5], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg5 <- ldply(filenames[6], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg6 <- ldply(filenames[7], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+gestures$emg7 <- ldply(filenames[8], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('emg', 1:250, sep='')))
+```
+ The following plot shows the un-usable raw values that need to be processed.
+```{r raw values before processing, message=F, warning=F}
+matplot(t(gestures$emg0[1:10,]), type='l')
+```
+
+# Data Preprocessing 
+## Calculating the variance threshhold
+
+To detect the start and the end of each gesture, the variance over a specific window is calculated.
+If the value is greater than the threshold, the signal will be cut. For this purpose we conducted the following steps:
+
+### Magnitude over all 8 EMG values
+
+Initially, We will utilize the magnitude of all eight EMG values. The following plot shows the 10 first magnitude values before processing.
+
+```{r calculate magnitude}
+gestures$mag <- as.data.frame(mapply(function(emg0, emg1, emg2, emg3, emg4, emg5, emg6, emg7) {
+  m <- sqrt(emg0^2 + emg1^2 + emg2^2 + emg3^2 + emg4^2 + emg5^2 + emg6^2 + emg7^2)
+  m
+}, gestures$emg0[,4:253], gestures$emg1[,4:253], gestures$emg2[,4:253], gestures$emg3[,4:253], gestures$emg4[,4:253], gestures$emg5[,4:253], gestures$emg6[,4:253], gestures$emg7[,4:253]))
+matplot(t(gestures$mag[1:10,]), type='l')
+```
+
+
+### Calculate variance using the 25% quantile
+Data still needs more definition. Therefore, we need to calculate variance using the 25% quantile to define the necessary peaks for each gesture and discard all values below this quanitle.
+
+
+```{r sd of each sample}
+gestures$q25 <- as.data.frame(apply(gestures$mag, 1 ,function(m) {
+  q25 <- quantile(m, na.rm = T)[[3]]
+  q25
+}))
+```
+
+### Stripping the data for all values below this quanitle
+
+```{r strip values}
+stepwidth <- 1/250
+gestures$new_mag <- data.frame(matrix(NA, ncol = 250))
+gestures$data <- data.frame(matrix(NA, ncol = 2003))
+for (i in 1:(dim(gestures$mag)[1])) {
+  # 1 remove NAs
+  mag <- gestures$mag[i,]
+  mag[is.na(mag)] <- 0
+  # 2 pre filter
+  mag <- rollapply(data = mag[!is.na(mag)], width = 10, FUN = median)
+  # 3 cut
+  start <- which.max(mag > gestures$q25[i,])
+  stop <- length(mag) - which.max(rev(mag) > gestures$q25[i,])
+  mag <- mag[start:stop]
+  start <- start + 3
+  stop <- stop + 3
+  emg0 <- gestures$emg0[i,start:stop]
+  emg1 <- gestures$emg1[i,start:stop]
+  emg2 <- gestures$emg2[i,start:stop]
+  emg3 <- gestures$emg3[i,start:stop]
+  emg4 <- gestures$emg4[i,start:stop]
+  emg5 <- gestures$emg5[i,start:stop]
+  emg6 <- gestures$emg6[i,start:stop]
+  emg7 <- gestures$emg7[i,start:stop]
+  # remove NAs and apply runmed
+  emg0 <- rollapply(data = emg0[!is.na(emg0)], width = 10, FUN = median)
+  emg1 <- rollapply(data = emg1[!is.na(emg1)], width = 10, FUN = median)
+  emg2 <- rollapply(data = emg2[!is.na(emg2)], width = 10, FUN = median)
+  emg3 <- rollapply(data = emg3[!is.na(emg3)], width = 10, FUN = median)
+  emg4 <- rollapply(data = emg4[!is.na(emg4)], width = 10, FUN = median)
+  emg5 <- rollapply(data = emg5[!is.na(emg5)], width = 10, FUN = median)
+  emg6 <- rollapply(data = emg6[!is.na(emg6)], width = 10, FUN = median)
+  emg7 <- rollapply(data = emg7[!is.na(emg7)], width = 10, FUN = median)
+  # 4 approx
+  mag_approx <- approx(x = seq(0,1,1/(length(mag)-1)), y = mag, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  
+  emg0_approx <- approx(x = seq(0,1,1/(length(emg0)-1)), y = emg0, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg1_approx <- approx(x = seq(0,1,1/(length(emg1)-1)), y = emg1, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg2_approx <- approx(x = seq(0,1,1/(length(emg2)-1)), y = emg2, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg3_approx <- approx(x = seq(0,1,1/(length(emg3)-1)), y = emg3, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg4_approx <- approx(x = seq(0,1,1/(length(emg4)-1)), y = emg4, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg5_approx <- approx(x = seq(0,1,1/(length(emg5)-1)), y = emg5, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg6_approx <- approx(x = seq(0,1,1/(length(emg6)-1)), y = emg6, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  emg7_approx <- approx(x = seq(0,1,1/(length(emg7)-1)), y = emg7, xout = seq(0,1,stepwidth), method = 'linear')$y[1:250]
+  # 5 filter
+  
+  # 6 append to one line
+  gestures$new_mag[i,] <- as.data.frame(t(mag_approx))
+  gestures$emg0[i,4:253] <- as.data.frame(t(emg0_approx))
+  gestures$emg1[i,4:253] <- as.data.frame(t(emg1_approx))
+  gestures$emg2[i,4:253] <- as.data.frame(t(emg2_approx))
+  gestures$emg3[i,4:253] <- as.data.frame(t(emg3_approx))
+  gestures$emg4[i,4:253] <- as.data.frame(t(emg4_approx))
+  gestures$emg5[i,4:253] <- as.data.frame(t(emg5_approx))
+  gestures$emg6[i,4:253] <- as.data.frame(t(emg6_approx))
+  gestures$emg7[i,4:253] <- as.data.frame(t(emg7_approx))
+  
+  gestures$data[i,1:253] <- gestures$emg0[i,]
+  gestures$data[i,254:503] <- gestures$emg1[i,4:253]
+  gestures$data[i,504:753] <- gestures$emg2[i,4:253]
+  gestures$data[i,754:1003] <- gestures$emg3[i,4:253]
+  gestures$data[i,1004:1253] <- gestures$emg4[i,4:253]
+  gestures$data[i,1254:1503] <- gestures$emg5[i,4:253]
+  gestures$data[i,1504:1753] <- gestures$emg6[i,4:253]
+  gestures$data[i,1754:2003] <- gestures$emg7[i,4:253]
+}
+matplot(t(gestures$new_mag[1:10,]), type='l')
+
+```
+
+
+The plot above shows the new magnitude for the first 10 values after processing the whole data. Whereas, the following plot shows the usable data values.
+
+```{r plot values }
+matplot(t(gestures$emg0[1:10,-(1:3)]), type='l')
+```
+
+
+
+## Data Validation and Optimization
+
+### Feature Correlation
+
+```{r feature correlation}
+# feature correlation as plot
+corrplot(cor(gestures$data[,4:100]), tl.cex = 0.3) # addgrid.col = NA
+# remove correlated variable using ?findCorrelation
+foundCorIndexes <- findCorrelation(cor(gestures$data))
+#foundCorIndexes
+corrplot(cor(gestures$data[,-foundCorIndexes]), tl.cex = 0.3)
+# remove the features from the data
+gestures$data <- gestures$data[,-foundCorIndexes]
+```
+
+## Data Partitioning
+
+```{r data_partitioning}
+# split into training and test data
+set.seed(1704)
+indexes_train <- createDataPartition(gestures$emg0[,1], p=0.75, list = F)
+indexes_test <- (1:nrow(gestures$data))[-indexes_train]
+
+training <- gestures$data[indexes_train,]
+training_gest <- gestures$emg0[indexes_train,1]
+testing <- gestures$data[indexes_test,]
+testing_gest <- gestures$emg0[indexes_test,1]
+```
+
+## Feature Selection
+We tried to use feature selection, but it outputted less samples which resulted with poor training and testing accuracies. So, we had to skip feature selection.
+```{r feature_selection}
+#sbfRes <- sbf(x = training, y = training_gest, sbfControl = sbfControl(functions = rfSBF, method = 'repeatedcv', repeats = 5)) # more repeats are better
+#sbfRes
+#sbfRes$optVariables
+#gestures_opt$data <- gestures_opt$data[,sbfRes$optVariables]
+```
+
+# Model Training
+
+```{r initialize models list}
+models <- list()
+```
+
+```{r specify train control}
+trControl <- trainControl(
+    method = 'repeatedcv', # none, cv, repeatedcv, LOOCV, ...
+    number = 10, # nr of CV partitions
+    repeats = 20, # nr of partitioning repetitions
+    returnData = F, 
+    # classProbs = T, # enable computation of class probabilities?
+    # summaryFunction = twoClassSummary, # use when classifying two classes 
+    returnResamp = 'final', # return CV partition results for best model
+    allowParallel = T
+)
+
+#trControl <- trainControl(
+#                 method = 'LOOCV',
+#                 preProcOptions = list(thresh = 0.9),
+#                 returnResamp = 'final',
+#                 returnData = F,
+#                 savePredictions = T,
+#                 allowParallel = T
+#               )
+```
+
+## KNN
+
+```{r model training knn}
+models$knn <- train(training,
+               factor(training_gest),
+               method = 'knn',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trControl
+               )
+models$knn
+```
+
+```{r predict_test_data knn}
+predicted <- predict(models$knn, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing_gest)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+## LDA
+To compare the results, now a *lda* model with the same parameters is trained.
+
+```{r model training lda}
+models$lda <- train(training,
+               factor(training_gest),
+               method = 'lda',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trControl
+               )
+models$lda
+```
+
+```{r predict_test_data lda}
+predicted <- predict(models$lda, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing_gest)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+## LDA2
+
+```{r model training lda2}
+models$lda2 <- train(training,
+               factor(training_gest),
+               method = 'lda2',
+               preProcess = c('center', 'scale', 'pca'),
+               metric = 'Kappa',
+               trControl = trControl
+               )
+models$lda2
+```
+
+```{r predict_test_data lda2}
+predicted <- predict(models$lda2, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+## SVM
+
+```{r train model svm}
+train_model <- function(method, tuneGrid=NULL) {
+  train(x = training, # in real life apps only use train data here!
+        y = training_gest, # in real life apps only use train data here!
+        method = method, 
+        metric = 'Kappa', 
+        tuneGrid = tuneGrid,
+        trControl = trControl
+  )
+}
+models$svmLinear <- train_model('svmLinear', tuneGrid = expand.grid(C=3**(-5:5)))
+models$svmRadial <- train_model('svmRadial', tuneGrid = expand.grid(C=3**(-5:5), sigma=3**(-5:5)))
+```
+
+```{r display model svm}
+print(plot(models$svmLinear, scales=list(x=list(log=3))))
+print(plot(models$svmRadial, scales=list(x=list(log=3))))
+```
+
+```{r predict_test_data svm linear}
+predicted <- predict(models$svmLinear, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+```{r predict_test_data svm radial}
+predicted <- predict(models$svmRadial, newdata = testing)
+
+# to ensure, that also when one level is not predicted, the results can be displayed
+u = union(predicted, testing$pers)
+t = table(factor(predicted, u), factor(testing_gest, u))
+conf <- confusionMatrix(t)
+
+levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))
+```
+
+## Result Comparison
+
+```{r result comparison}
+# save models to file to ensure that the results were not lost
+saveRDS(object = models, file = "project_models.RDS")
+results <- resamples(models)
+summary(results)
+bwplot(results)
+```

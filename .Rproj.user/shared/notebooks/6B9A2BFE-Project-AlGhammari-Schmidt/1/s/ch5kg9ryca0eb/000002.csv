@@ -1,0 +1,2 @@
+"0","# feature correlation as plot"
+"0","corrplot(cor(gestures$data[,4:100]), tl.cex = 0.3) # addgrid.col = NA"

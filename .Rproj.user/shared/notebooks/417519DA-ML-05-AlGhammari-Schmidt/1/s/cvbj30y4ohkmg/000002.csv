@@ -1,0 +1,8 @@
+"0","filedir <- ""../dat"""
+"0","  "
+"0","# get all filenames"
+"0","filenames <- list.files(filedir, full.names = T, pattern=""*.csv"")"
+"0","gestures <- list()"
+"0","gestures$x <- ldply(filenames[1], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('acc', 1:1000, sep='')))"
+"0","gestures$y <- ldply(filenames[2], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('acc', 1:1000, sep='')))"
+"0","gestures$z <- ldply(filenames[3], read.table, sep=',', fill = T, col.names = c('gesture', 'person', 'sample', paste('acc', 1:1000, sep='')))"

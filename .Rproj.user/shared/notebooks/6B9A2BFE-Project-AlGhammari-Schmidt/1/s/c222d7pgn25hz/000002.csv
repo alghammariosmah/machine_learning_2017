@@ -1,0 +1,4 @@
+"0","gestures$q25 <- as.data.frame(apply(gestures$mag, 1 ,function(m) {"
+"0","  q25 <- quantile(m, na.rm = T)[[2]]"
+"0","  q25"
+"0","}))"

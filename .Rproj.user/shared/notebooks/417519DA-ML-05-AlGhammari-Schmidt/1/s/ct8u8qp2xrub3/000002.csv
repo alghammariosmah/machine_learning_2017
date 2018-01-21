@@ -1,0 +1,4 @@
+"0","gestures_opt$x <- as.data.frame(t(apply(gestures$x, 1, optimize)))
+"
+"2","
+"

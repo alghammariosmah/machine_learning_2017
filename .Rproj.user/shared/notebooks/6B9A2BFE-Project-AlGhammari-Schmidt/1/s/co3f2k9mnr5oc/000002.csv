@@ -1,0 +1,8 @@
+"0","# split into training and test data"
+"0","set.seed(1704)"
+"0","indexes_train <- createDataPartition(gestures$emg0[,1], p=0.75, list = F)"
+"0","indexes_test <- (1:nrow(gestures$data))[-indexes_train]"
+"0","training <- gestures$data[indexes_train,]"
+"0","training_gest <- gestures$emg0[indexes_train,1]"
+"0","testing <- gestures$data[indexes_test,]"
+"0","testing_gest <- gestures$emg0[indexes_test,1]"

@@ -1,0 +1,7 @@
+"0","print(plot(models$svmLinear, scales=list(x=list(log=3))))"
+"2","no non-missing arguments to min; returning Inf"
+"2","no non-missing arguments to max; returning -Inf"
+"2","no non-missing arguments to min; returning Inf"
+"2","no non-missing arguments to max; returning -Inf"
+"2","Error in plot.window(...) : need finite 'xlim' values
+"

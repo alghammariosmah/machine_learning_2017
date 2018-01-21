@@ -1,0 +1,6 @@
+"0","predicted <- predict(models$lda2, newdata = testing)"
+"0","# to ensure, that also when one level is not predicted, the results can be displayed"
+"0","u = union(predicted, testing$pers)"
+"0","t = table(factor(predicted, u), factor(testing_gest, u))"
+"0","conf <- confusionMatrix(t)"
+"0","levelplot(sweep(conf$table, MARGIN = 2, STATS = colSums(conf$table), FUN = `/`), col.regions = gray(100:0/100))"
